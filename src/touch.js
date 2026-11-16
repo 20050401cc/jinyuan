@@ -70,6 +70,7 @@
       const dx = T.move.x - T.move.ox, dy = T.move.y - T.move.oy, d = Math.hypot(dx, dy);
       if (d > 8) { const k = Math.min(1, d / 46); T.mvx = dx / d * k; T.mvy = dy / d * k; }
     }
+    if (!T.mvx && !T.mvy && (G.motion.mvx || G.motion.mvy)) { T.mvx = G.motion.mvx; T.mvy = G.motion.mvy; }
     if (T.aim) {
       const dx = T.aim.x - T.aim.ox, dy = T.aim.y - T.aim.oy, d = Math.hypot(dx, dy);
       if (d > 12) T.aimAng = Math.atan2(dy, dx);
@@ -104,7 +105,7 @@
     const g = G.game, p = g.player;
     if (!T.on || g.state !== 'play') return;
     if (T.move) stick(ctx, T.move, '#3ff0da');
-    else { ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(150, 400, 54, 0, TAU); ctx.stroke(); ctx.setLineDash([]); G.text(ctx, '移动', 150, 400, 13, 'rgba(255,255,255,0.3)', 'center'); }
+    else { ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(150, 400, 54, 0, TAU); ctx.stroke(); ctx.setLineDash([]); G.text(ctx, G.motion.status === 'ok' ? '倾斜移动' : '移动', 150, 400, 13, 'rgba(255,255,255,0.3)', 'center'); }
     if (T.aim) stick(ctx, T.aim, '#ffb05a');
     else { ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(850, 400, 54, 0, TAU); ctx.stroke(); ctx.setLineDash([]); G.text(ctx, '射击', 850, 400, 13, 'rgba(255,255,255,0.3)', 'center'); }
     button(ctx, BTN.dash, '闪', '#3ff0da', G.clamp(1 - p.dashCd / p.stats.dashCd, 0, 1));

@@ -276,7 +276,7 @@
     // 第二步：对应的操作方式
     panel(ctx, G.W / 2 - 270, 338, 540, 136, '#ff9d4a', 0.62);
     const rows = G.touch.on
-      ? [['左半屏拖动', '移动'], ['右半屏拖动', '瞄准并射击'], ['右半屏按住', '自动瞄准最近敌人'], ['「闪」按钮', '闪避（冲刺时无敌）'], ['点武器栏', '切换武器'], ['「E」按钮', '拾取 · 开箱 · 购买']]
+      ? [G.motion.status === 'ok' ? ['倾斜设备', '移动（甩动可闪避）'] : ['左半屏拖动', '移动'], ['右半屏拖动', '瞄准并射击'], ['右半屏按住', '自动瞄准最近敌人'], ['「闪」按钮', '闪避（冲刺时无敌）'], ['点武器栏', '切换武器'], ['「E」按钮', '拾取 · 开箱 · 购买']]
       : [['W A S D', '移动'], ['鼠标 / 左键', '瞄准 · 射击'], ['空格', '闪避（冲刺时无敌）'], ['Q / 滚轮', '切换武器'], ['E', '拾取 · 开箱 · 购买'], ['Esc / M', '暂停 · 静音']];
     rows.forEach((r, i) => {
       const x = G.W / 2 - 250 + (i % 2) * 262, y = 362 + Math.floor(i / 2) * 40;
@@ -289,8 +289,14 @@
     });
 
     // 第三步：开始
-    if (G.button(ctx, G.W / 2 - 120, 490, 240, 54, '开 始 远 征', true)) G.newRun();
-    text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 570, 12, '#9a8478', 'center');
+    if (G.touch.on) {
+      G.motionToggle(ctx, G.W / 2 - 170, 482, 340, 34);
+      if (G.button(ctx, G.W / 2 - 120, 526, 240, 50, '开 始 远 征', true)) G.newRun();
+      if (G.motion.status === 'ok') text(ctx, '以开始时的握持姿势为中立位，暂停再继续可重新校准', G.W / 2, 588, 11, '#9a8478', 'center');
+    } else {
+      if (G.button(ctx, G.W / 2 - 120, 490, 240, 54, '开 始 远 征', true)) G.newRun();
+      text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 570, 12, '#9a8478', 'center');
+    }
   };
 
   // 设备选择卡片：返回本帧是否被点击
@@ -322,19 +328,26 @@
   }
 
   G.drawPause = function (ctx) {
-    const g = G.game;
+    const g = G.game, T = G.touch.on, x = G.W / 2 - 110, h = 42;
     dim(ctx, 0.72);
-    panel(ctx, G.W / 2 - 170, 66, 340, 432, '#ff9d4a', 0.9);
-    glowText(ctx, '暂 停', G.W / 2, 112, 44, '#ffe9c8', '#ff9d4a', true);
-    divider(ctx, G.W / 2, 146, 110, '#ff9d4a');
-    if (G.button(ctx, G.W / 2 - 110, 168, 220, 48, '继续', true)) g.state = 'play';
-    if (G.button(ctx, G.W / 2 - 110, 228, 220, 48, '重新开始')) G.newRun();
-    if (G.button(ctx, G.W / 2 - 110, 288, 106, 48, G.audio.muted ? '声音 关' : '声音 开')) G.audio.muted = !G.audio.muted;
-    if (G.button(ctx, G.W / 2 + 4, 288, 106, 48, G.audio.musicOn ? '音乐 开' : '音乐 关')) G.audio.musicOn = !G.audio.musicOn;
-    if (G.button(ctx, G.W / 2 - 110, 348, 220, 48, G.touch.on ? '操作：手机端' : '操作：电脑端')) G.touch.on = !G.touch.on;
-    if (G.button(ctx, G.W / 2 - 110, 408, 220, 48, '返回主菜单')) g.state = 'menu';
-    text(ctx, G.touch.on ? '左半屏移动 · 右半屏瞄准射击 · 「闪」闪避 · 点武器栏换枪' : 'WASD 移动 · 鼠标瞄准射击 · 空格闪避 · Q 换枪 · E 互动', G.W / 2, 474, 12, '#a89ea8', 'center');
-    if (g.perksTaken.length) perkRow(ctx, g, 540);
+    panel(ctx, G.W / 2 - 190, 50, 380, T ? 468 : 418, '#ff9d4a', 0.9);
+    glowText(ctx, '暂 停', G.W / 2, 94, 42, '#ffe9c8', '#ff9d4a', true);
+    divider(ctx, G.W / 2, 126, 110, '#ff9d4a');
+    let y = 146;
+    if (G.button(ctx, x, y, 220, h, '继续', true)) g.state = 'play';
+    y += 50;
+    if (G.button(ctx, x, y, 220, h, '重新开始')) G.newRun();
+    y += 50;
+    if (G.button(ctx, x, y, 106, h, G.audio.muted ? '声音 关' : '声音 开')) G.audio.muted = !G.audio.muted;
+    if (G.button(ctx, x + 114, y, 106, h, G.audio.musicOn ? '音乐 开' : '音乐 关')) G.audio.musicOn = !G.audio.musicOn;
+    y += 50;
+    if (G.button(ctx, x, y, 220, h, T ? '操作：手机端' : '操作：电脑端')) G.touch.on = !G.touch.on;
+    y += 50;
+    if (T) { G.motionToggle(ctx, G.W / 2 - 170, y, 340, h); y += 50; }
+    if (G.button(ctx, x, y, 220, h, '返回主菜单')) g.state = 'menu';
+    y += 62;
+    text(ctx, !T ? 'WASD 移动 · 鼠标瞄准射击 · 空格闪避 · Q 换枪 · E 互动' : G.motion.status === 'ok' ? '倾斜移动 · 甩动闪避 · 右半屏瞄准射击 · 继续后重新校准' : '左半屏移动 · 右半屏瞄准射击 · 「闪」闪避 · 点武器栏换枪', G.W / 2, y, 12, '#a89ea8', 'center');
+    if (g.perksTaken.length) perkRow(ctx, g, T ? 552 : 510);
   };
   function perkRow(ctx, g, y) {
     const list = g.perksTaken, n = Math.min(list.length, 14), x0 = G.W / 2 - (n - 1) * 21;

@@ -69,6 +69,7 @@
 
   G.update = function (dt) {
     const I = G.input;
+    G.updateMotion();
     G.updateTouch();
     g.time += dt; g.stateT += dt;
     if (g.dungeon) G.prebake(g.dungeon);
@@ -97,6 +98,7 @@
 
   let ctx = null;
   G.draw = function () {
+    G.motion.rect = null;
     if (g.state === 'menu') { G.drawMenu(ctx); G.warm(ctx); }
     else {
       G.drawWorld(ctx);
@@ -130,6 +132,7 @@
     ctx = canvas.getContext('2d');
     G.initInput(canvas);
     G.initTouch(canvas);
+    G.initMotion(canvas);
     fit(canvas);
     window.addEventListener('resize', () => fit(canvas));
     document.addEventListener('visibilitychange', () => { if (document.hidden && g.state === 'play') g.state = 'pause'; });
