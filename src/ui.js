@@ -268,6 +268,9 @@
     divider(ctx, G.W / 2, 188, 170, '#ff9d4a');
     text(ctx, '向 下 三 层 · 直 抵 渊 心', G.W / 2, 210, 15, '#d8b494', 'center');
 
+    const rec = G.save.rec;
+    if (rec.runs) text(ctx, '远征 ' + rec.runs + ' 次 · 通关 ' + rec.wins + ' 次 · 最深第 ' + rec.best + ' 层', 16, 18, 12, '#a89080', 'left');
+
     // 第一步：选择设备
     text(ctx, '选择你的设备', G.W / 2, 244, 13, '#a89080', 'center');
     if (modeCard(ctx, G.W / 2 - 214, 258, 204, 66, '电脑端', '键盘 + 鼠标', 'pc', !G.touch.on)) G.touch.on = false;
@@ -291,13 +294,22 @@
     // 第三步：开始
     if (G.touch.on) {
       G.motionToggle(ctx, G.W / 2 - 170, 482, 340, 34);
-      if (G.button(ctx, G.W / 2 - 120, 526, 240, 50, '开 始 远 征', true)) G.newRun();
+      startButtons(ctx, 526, 50);
       if (G.motion.status === 'ok') text(ctx, '以开始时的握持姿势为中立位，暂停再继续可重新校准', G.W / 2, 588, 11, '#9a8478', 'center');
     } else {
-      if (G.button(ctx, G.W / 2 - 120, 490, 240, 54, '开 始 远 征', true)) G.newRun();
+      startButtons(ctx, 490, 54);
       text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 570, 12, '#9a8478', 'center');
     }
   };
+
+  // 有存档时显示「继续远征」和「新的远征」，否则只有「开始远征」
+  function startButtons(ctx, y, h) {
+    const m = G.save.meta;
+    if (m) {
+      if (G.button(ctx, G.W / 2 - 250, y, 260, h, '继续远征 · 第 ' + m.floor + ' 层', true)) { if (!G.save.resume()) G.newRun(); }
+      else if (G.button(ctx, G.W / 2 + 20, y, 230, h, '新的远征')) G.newRun();
+    } else if (G.button(ctx, G.W / 2 - 120, y, 240, h, '开 始 远 征', true)) G.newRun();
+  }
 
   // 设备选择卡片：返回本帧是否被点击
   function modeCard(ctx, x, y, w, h, title, sub, icon, sel) {
@@ -344,7 +356,7 @@
     if (G.button(ctx, x, y, 220, h, T ? '操作：手机端' : '操作：电脑端')) G.touch.on = !G.touch.on;
     y += 50;
     if (T) { G.motionToggle(ctx, G.W / 2 - 170, y, 340, h); y += 50; }
-    if (G.button(ctx, x, y, 220, h, '返回主菜单')) g.state = 'menu';
+    if (G.button(ctx, x, y, 220, h, '返回主菜单')) { G.save.write(); g.state = 'menu'; }
     y += 62;
     text(ctx, !T ? 'WASD 移动 · 鼠标瞄准射击 · 空格闪避 · Q 换枪 · E 互动' : G.motion.status === 'ok' ? '倾斜移动 · 甩动闪避 · 右半屏瞄准射击 · 继续后重新校准' : '左半屏移动 · 右半屏瞄准射击 · 「闪」闪避 · 点武器栏换枪', G.W / 2, y, 12, '#a89ea8', 'center');
     if (g.perksTaken.length) perkRow(ctx, g, T ? 552 : 510);

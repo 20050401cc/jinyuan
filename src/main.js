@@ -28,10 +28,12 @@
     G.stockRooms();
     g.cam.x = p.x - G.W / 2; g.cam.y = p.y - G.H / 2;
     G.prebakeNear(g.dungeon, p.x, p.y);
+    G.save.timer = 1.5;
     g.banner = { text: '第 ' + n + ' 层 · ' + G.THEMES[Math.min(n, 3) - 1].name, t: 2.4 };
   };
 
   G.newRun = function () {
+    G.save.clear();
     g.player = G.createPlayer();
     g.runTime = 0; g.kills = 0; g.goldTotal = 0; g.dmgTaken = 0; g.dmgDealt = 0;
     g.perksTaken = []; g.perkChoices = [];
@@ -44,6 +46,8 @@
     if (g.state !== 'play') return;
     g.state = win ? 'win' : 'dead';
     g.banner = null;
+    G.save.clear();
+    G.save.record(win, g.floor);
     G.sfx(win ? 'win' : 'death');
     g.stateT = 0;
     if (!win) { G.burst(g.player.x, g.player.y, '#35d0bd', 30, 260, 0.8, 4); g.shake = 16; }
@@ -65,6 +69,7 @@
     g.shake *= Math.pow(0.0015, dt);
     if (g.banner) g.banner.t -= dt;
     if (g.winT > 0) { g.winT -= dt; if (g.winT <= 0) G.endRun(true); }
+    G.save.auto(dt);
   }
 
   G.update = function (dt) {
@@ -76,12 +81,13 @@
     if (g.fade > 0 && g.state !== 'perk') g.fade = Math.max(0, g.fade - dt * 1.6);
     if (I.pressed.KeyM) G.audio.muted = !G.audio.muted;
     if (I.pressed.F3) G.debug.fps = !G.debug.fps;
+    if ((g.cfgT = (g.cfgT || 0) + dt) > 1) { g.cfgT = 0; G.save.syncCfg(); }
     switch (g.state) {
       case 'menu':
-        if (I.pressed.Enter) G.newRun();
+        if (I.pressed.Enter) { if (!(G.save.meta && G.save.resume())) G.newRun(); }
         break;
       case 'play':
-        if (I.pressed.Escape || I.pressed.KeyP) { g.state = 'pause'; g.stateT = 0; break; }
+        if (I.pressed.Escape || I.pressed.KeyP) { g.state = 'pause'; g.stateT = 0; G.save.write(); break; }
         updatePlay(dt);
         break;
       case 'pause':
@@ -133,6 +139,7 @@
     G.initInput(canvas);
     G.initTouch(canvas);
     G.initMotion(canvas);
+    G.save.init();
     fit(canvas);
     window.addEventListener('resize', () => fit(canvas));
     document.addEventListener('visibilitychange', () => { if (document.hidden && g.state === 'play') g.state = 'pause'; });

@@ -2453,6 +2453,152 @@
 
 </script>
 <script>
+// 存档：把进行中的远征和设置写进浏览器本地存储，刷新或重开后可继续
+'use strict';
+(function () {
+  const G = window.G;
+  const KEY_RUN = 'jinyuan.run.v1', KEY_CFG = 'jinyuan.cfg.v1';
+  const S = G.save = { meta: null, timer: 0, cfgStr: '', rec: { runs: 0, wins: 0, best: 0 }, ok: true };
+
+  function get(k) { try { return window.localStorage.getItem(k); } catch (e) { S.ok = false; return null; } }
+  function set(k, v) { try { window.localStorage.setItem(k, v); return true; } catch (e) { S.ok = false; return false; } }
+  function del(k) { try { window.localStorage.removeItem(k); } catch (e) { S.ok = false; } }
+
+  function packTiles(u8) {
+    let s = '';
+    for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192));
+    return btoa(s);
+  }
+  function unpackTiles(b64, n) {
+    const s = atob(b64), u8 = new Uint8Array(n);
+    for (let i = 0; i < n; i++) u8[i] = s.charCodeAt(i);
+    return u8;
+  }
+
+  // 只在安全的时刻存档：不在战斗中、没有 Boss、角色活着
+  function canSave() {
+    const g = G.game;
+    return (g.state === 'play' || g.state === 'pause') && g.player && g.player.hp > 0 && !g.active && !g.boss && g.winT < 0 && g.dungeon;
+  }
+
+  S.write = function () {
+    if (!canSave()) return false;
+    const g = G.game, p = g.player, d = g.dungeon, doors = [];
+    for (let i = 0; i < d.owner.length; i++) if (d.owner[i] >= 0) doors.push(i, d.owner[i]);
+    const data = {
+      v: 1, floor: g.floor, runTime: g.runTime, kills: g.kills, goldTotal: g.goldTotal, dmgTaken: g.dmgTaken, dmgDealt: g.dmgDealt,
+      perks: g.perksTaken.map(k => k.id),
+      player: { x: p.x, y: p.y, hp: p.hp, maxHp: p.maxHp, shield: p.shield, maxShield: p.maxShield, energy: p.energy, maxEnergy: p.maxEnergy, gold: p.gold, weapons: p.weapons, cur: p.cur, stats: p.stats },
+      dungeon: { w: d.w, h: d.h, tiles: packTiles(d.tiles), doors },
+      rooms: d.rooms.map(r => Object.assign({}, r, { locked: false })),
+      items: g.items.map(it => ({ kind: it.kind, x: it.x, y: it.y, price: it.price || 0, wid: it.wid, opened: it.opened, item: it.item, perk: it.perk ? it.perk.id : undefined })),
+      pickups: g.pickups.map(k => ({ kind: k.kind, x: k.x, y: k.y, val: k.val }))
+    };
+    if (!set(KEY_RUN, JSON.stringify(data))) return false;
+    S.meta = { floor: g.floor, kills: g.kills };
+    return true;
+  };
+
+  S.clear = function () { del(KEY_RUN); S.meta = null; };
+
+  // 读档并恢复到游戏中；存档损坏则丢弃
+  S.resume = function () {
+    const g = G.game;
+    let data;
+    try { data = JSON.parse(get(KEY_RUN)); } catch (e) { data = null; }
+    try {
+      if (!data || data.v !== 1) throw new Error('bad save');
+      const perkOf = id => G.PERKS.find(k => k.id === id);
+      const p = G.createPlayer(), sp = data.player;
+      for (const k of ['x', 'y', 'hp', 'maxHp', 'shield', 'maxShield', 'energy', 'maxEnergy', 'gold', 'cur']) { if (typeof sp[k] !== 'number' || !isFinite(sp[k])) throw new Error('bad player'); p[k] = sp[k]; }
+      p.weapons = [G.WEAPONS[sp.weapons[0]] ? sp.weapons[0] : 'pistol', G.WEAPONS[sp.weapons[1]] ? sp.weapons[1] : null];
+      if (!p.weapons[p.cur]) p.cur = 0;
+      Object.assign(p.stats, sp.stats);
+      const dd = data.dungeon, n = dd.w * dd.h;
+      const tiles = unpackTiles(dd.tiles, n), owner = new Int16Array(n).fill(-1);
+      for (let i = 0; i < dd.doors.length; i += 2) owner[dd.doors[i]] = dd.doors[i + 1];
+      const rooms = data.rooms;
+      const d = { w: dd.w, h: dd.h, tiles, owner, rooms, floor: data.floor, start: rooms[0], boss: rooms.find(r => r.type === 'boss') };
+      if (!d.boss || !rooms.length) throw new Error('bad dungeon');
+
+      g.player = p;
+      g.floor = data.floor; g.dmgMul = 1 + 0.2 * (data.floor - 1);
+      g.runTime = data.runTime || 0; g.kills = data.kills || 0; g.goldTotal = data.goldTotal || 0; g.dmgTaken = data.dmgTaken || 0; g.dmgDealt = data.dmgDealt || 0;
+      g.perksTaken = (data.perks || []).map(perkOf).filter(Boolean); g.perkChoices = [];
+      g.enemies.length = g.bullets.length = g.ebullets.length = 0;
+      g.pickups.length = g.items.length = g.particles.length = g.texts.length = g.effects.length = g.stains.length = 0;
+      g.active = null; g.boss = null; g.winT = -1; g.shake = 0; g.fade = 1;
+      g.dungeon = d;
+      G.decorate(d);
+      for (const it of data.items) {
+        const o = { kind: it.kind, x: it.x, y: it.y, price: it.price || 0 };
+        if (it.kind === 'weapon') { if (!G.WEAPONS[it.wid]) continue; o.wid = it.wid; }
+        if (it.kind === 'chest') o.opened = !!it.opened;
+        if (it.kind === 'goods') { o.item = it.item; if (it.item === 'perk') { o.perk = perkOf(it.perk); if (!o.perk) continue; } }
+        g.items.push(o);
+      }
+      for (const k of data.pickups || []) g.pickups.push({ kind: k.kind, x: k.x, y: k.y, vx: 0, vy: 0, val: k.val, t: 1, r: 5 });
+      if (G.collides(p.x, p.y, p.r)) { p.x = d.start.cx; p.y = d.start.cy; }
+      p.invuln = 1;
+      g.room = G.roomAt(p.x, p.y, 0) || d.start;
+      g.cam.x = p.x - G.W / 2; g.cam.y = p.y - G.H / 2;
+      G.prebakeNear(d, p.x, p.y);
+      g.banner = { text: '继续远征 · 第 ' + g.floor + ' 层', t: 2.2 };
+      g.state = 'play'; g.stateT = 0;
+      G.input.down = false;
+      S.timer = 0;
+      return true;
+    } catch (e) {
+      S.clear();
+      return false;
+    }
+  };
+
+  // 游戏中每隔两秒自动存一次
+  S.auto = function (dt) {
+    S.timer += dt;
+    if (S.timer < 2) return;
+    S.timer = 0;
+    S.write();
+  };
+
+  // ---------- 设置与战绩 ----------
+  function cfgNow() { return JSON.stringify({ touch: !!G.touch.on, muted: !!G.audio.muted, music: !!G.audio.musicOn, rec: S.rec }); }
+  S.syncCfg = function () {
+    const s = cfgNow();
+    if (s !== S.cfgStr) { S.cfgStr = s; set(KEY_CFG, s); }
+  };
+  S.record = function (win, floor) {
+    S.rec.runs++;
+    if (win) S.rec.wins++;
+    S.rec.best = Math.max(S.rec.best, win ? G.MAX_FLOOR : floor);
+    S.syncCfg();
+  };
+
+  S.init = function () {
+    try {
+      const c = JSON.parse(get(KEY_CFG));
+      if (c) {
+        if (typeof c.touch === 'boolean') G.touch.on = c.touch;
+        if (typeof c.muted === 'boolean') G.audio.muted = c.muted;
+        if (typeof c.music === 'boolean') G.audio.musicOn = c.music;
+        if (c.rec) S.rec = { runs: c.rec.runs | 0, wins: c.rec.wins | 0, best: c.rec.best | 0 };
+      }
+    } catch (e) { /* 设置损坏时用默认值 */ }
+    S.cfgStr = cfgNow();
+    try {
+      const d = JSON.parse(get(KEY_RUN));
+      S.meta = d && d.v === 1 ? { floor: d.floor, kills: d.kills } : null;
+    } catch (e) { S.meta = null; }
+    // 切到后台或关闭页面前再存一次
+    const flush = () => { S.write(); S.syncCfg(); };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });
+  };
+})();
+
+</script>
+<script>
 // 世界渲染：地图 → 物体 → 光照暗幕 → 发光层（子弹/火焰/特效）→ 氛围
 'use strict';
 (function () {
@@ -3051,6 +3197,9 @@
     divider(ctx, G.W / 2, 188, 170, '#ff9d4a');
     text(ctx, '向 下 三 层 · 直 抵 渊 心', G.W / 2, 210, 15, '#d8b494', 'center');
 
+    const rec = G.save.rec;
+    if (rec.runs) text(ctx, '远征 ' + rec.runs + ' 次 · 通关 ' + rec.wins + ' 次 · 最深第 ' + rec.best + ' 层', 16, 18, 12, '#a89080', 'left');
+
     // 第一步：选择设备
     text(ctx, '选择你的设备', G.W / 2, 244, 13, '#a89080', 'center');
     if (modeCard(ctx, G.W / 2 - 214, 258, 204, 66, '电脑端', '键盘 + 鼠标', 'pc', !G.touch.on)) G.touch.on = false;
@@ -3074,13 +3223,22 @@
     // 第三步：开始
     if (G.touch.on) {
       G.motionToggle(ctx, G.W / 2 - 170, 482, 340, 34);
-      if (G.button(ctx, G.W / 2 - 120, 526, 240, 50, '开 始 远 征', true)) G.newRun();
+      startButtons(ctx, 526, 50);
       if (G.motion.status === 'ok') text(ctx, '以开始时的握持姿势为中立位，暂停再继续可重新校准', G.W / 2, 588, 11, '#9a8478', 'center');
     } else {
-      if (G.button(ctx, G.W / 2 - 120, 490, 240, 54, '开 始 远 征', true)) G.newRun();
+      startButtons(ctx, 490, 54);
       text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 570, 12, '#9a8478', 'center');
     }
   };
+
+  // 有存档时显示「继续远征」和「新的远征」，否则只有「开始远征」
+  function startButtons(ctx, y, h) {
+    const m = G.save.meta;
+    if (m) {
+      if (G.button(ctx, G.W / 2 - 250, y, 260, h, '继续远征 · 第 ' + m.floor + ' 层', true)) { if (!G.save.resume()) G.newRun(); }
+      else if (G.button(ctx, G.W / 2 + 20, y, 230, h, '新的远征')) G.newRun();
+    } else if (G.button(ctx, G.W / 2 - 120, y, 240, h, '开 始 远 征', true)) G.newRun();
+  }
 
   // 设备选择卡片：返回本帧是否被点击
   function modeCard(ctx, x, y, w, h, title, sub, icon, sel) {
@@ -3127,7 +3285,7 @@
     if (G.button(ctx, x, y, 220, h, T ? '操作：手机端' : '操作：电脑端')) G.touch.on = !G.touch.on;
     y += 50;
     if (T) { G.motionToggle(ctx, G.W / 2 - 170, y, 340, h); y += 50; }
-    if (G.button(ctx, x, y, 220, h, '返回主菜单')) g.state = 'menu';
+    if (G.button(ctx, x, y, 220, h, '返回主菜单')) { G.save.write(); g.state = 'menu'; }
     y += 62;
     text(ctx, !T ? 'WASD 移动 · 鼠标瞄准射击 · 空格闪避 · Q 换枪 · E 互动' : G.motion.status === 'ok' ? '倾斜移动 · 甩动闪避 · 右半屏瞄准射击 · 继续后重新校准' : '左半屏移动 · 右半屏瞄准射击 · 「闪」闪避 · 点武器栏换枪', G.W / 2, y, 12, '#a89ea8', 'center');
     if (g.perksTaken.length) perkRow(ctx, g, T ? 552 : 510);
@@ -3274,10 +3432,12 @@
     G.stockRooms();
     g.cam.x = p.x - G.W / 2; g.cam.y = p.y - G.H / 2;
     G.prebakeNear(g.dungeon, p.x, p.y);
+    G.save.timer = 1.5;
     g.banner = { text: '第 ' + n + ' 层 · ' + G.THEMES[Math.min(n, 3) - 1].name, t: 2.4 };
   };
 
   G.newRun = function () {
+    G.save.clear();
     g.player = G.createPlayer();
     g.runTime = 0; g.kills = 0; g.goldTotal = 0; g.dmgTaken = 0; g.dmgDealt = 0;
     g.perksTaken = []; g.perkChoices = [];
@@ -3290,6 +3450,8 @@
     if (g.state !== 'play') return;
     g.state = win ? 'win' : 'dead';
     g.banner = null;
+    G.save.clear();
+    G.save.record(win, g.floor);
     G.sfx(win ? 'win' : 'death');
     g.stateT = 0;
     if (!win) { G.burst(g.player.x, g.player.y, '#35d0bd', 30, 260, 0.8, 4); g.shake = 16; }
@@ -3311,6 +3473,7 @@
     g.shake *= Math.pow(0.0015, dt);
     if (g.banner) g.banner.t -= dt;
     if (g.winT > 0) { g.winT -= dt; if (g.winT <= 0) G.endRun(true); }
+    G.save.auto(dt);
   }
 
   G.update = function (dt) {
@@ -3322,12 +3485,13 @@
     if (g.fade > 0 && g.state !== 'perk') g.fade = Math.max(0, g.fade - dt * 1.6);
     if (I.pressed.KeyM) G.audio.muted = !G.audio.muted;
     if (I.pressed.F3) G.debug.fps = !G.debug.fps;
+    if ((g.cfgT = (g.cfgT || 0) + dt) > 1) { g.cfgT = 0; G.save.syncCfg(); }
     switch (g.state) {
       case 'menu':
-        if (I.pressed.Enter) G.newRun();
+        if (I.pressed.Enter) { if (!(G.save.meta && G.save.resume())) G.newRun(); }
         break;
       case 'play':
-        if (I.pressed.Escape || I.pressed.KeyP) { g.state = 'pause'; g.stateT = 0; break; }
+        if (I.pressed.Escape || I.pressed.KeyP) { g.state = 'pause'; g.stateT = 0; G.save.write(); break; }
         updatePlay(dt);
         break;
       case 'pause':
@@ -3379,6 +3543,7 @@
     G.initInput(canvas);
     G.initTouch(canvas);
     G.initMotion(canvas);
+    G.save.init();
     fit(canvas);
     window.addEventListener('resize', () => fit(canvas));
     document.addEventListener('visibilitychange', () => { if (document.hidden && g.state === 'play') g.state = 'pause'; });
