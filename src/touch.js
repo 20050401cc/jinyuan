@@ -22,11 +22,12 @@
     };
     const start = e => {
       e.preventDefault();
-      T.on = true;
       G.audio.unlock();
       for (const t of e.changedTouches) {
         const p = pos(t), g = G.game;
         if (g.state !== 'play') { I.mx = p.x; I.my = p.y; I.clicked = true; continue; }
+        // 选了电脑端却在触屏上玩：把触摸当作鼠标
+        if (!T.on) { I.mx = p.x; I.my = p.y; I.down = true; continue; }
         if (inBtn(BTN.pause, p.x, p.y)) I.pressed.Escape = true;
         else if (inBtn(BTN.dash, p.x, p.y)) I.pressed.Space = true;
         else if (g.player.near && inBtn(BTN.use, p.x, p.y)) I.pressed.KeyE = true;
@@ -41,11 +42,12 @@
         const p = pos(t);
         if (T.move && t.identifier === T.move.id) { T.move.x = p.x; T.move.y = p.y; }
         else if (T.aim && t.identifier === T.aim.id) { T.aim.x = p.x; T.aim.y = p.y; }
-        else if (G.game.state !== 'play') { I.mx = p.x; I.my = p.y; }
+        else if (G.game.state !== 'play' || !T.on) { I.mx = p.x; I.my = p.y; }
       }
     };
     const end = e => {
       e.preventDefault();
+      if (!T.on) I.down = false;
       for (const t of e.changedTouches) {
         if (T.move && t.identifier === T.move.id) T.move = null;
         if (T.aim && t.identifier === T.aim.id) { T.aim = null; I.down = false; }
@@ -55,7 +57,6 @@
     canvas.addEventListener('touchmove', move, { passive: false });
     canvas.addEventListener('touchend', end, { passive: false });
     canvas.addEventListener('touchcancel', end, { passive: false });
-    window.addEventListener('mousemove', e => { if (e.movementX || e.movementY) T.on = false; });
   };
 
   // 每帧把摇杆状态换算成移动向量和准星位置

@@ -142,7 +142,7 @@
     ctx.fillStyle = dk >= 1 ? '#3ff0da' : '#8a8490';
     for (let i = 0; i < 3; i++) { ctx.globalAlpha = 0.4 + i * 0.3; ctx.beginPath(); ctx.moveTo(dx - 9 + i * 6, dy - 5); ctx.lineTo(dx - 3 + i * 6, dy); ctx.lineTo(dx - 9 + i * 6, dy + 5); ctx.lineTo(dx - 7 + i * 6, dy); ctx.closePath(); ctx.fill(); }
     ctx.globalAlpha = 1;
-    text(ctx, '空格', dx, dy + 31, 10, '#8a8490', 'center');
+    if (!G.touch.on) text(ctx, '空格', dx, dy + 31, 10, '#8a8490', 'center');
 
     // 右下：两把武器
     for (let i = 0; i < 2; i++) {
@@ -259,21 +259,27 @@
 
     // 标题
     ctx.save();
-    ctx.shadowColor = '#ff7a2a'; ctx.shadowBlur = 38 + Math.sin(t * 2) * 8;
-    const tg = ctx.createLinearGradient(0, 80, 0, 200);
+    ctx.shadowColor = '#ff7a2a'; ctx.shadowBlur = 36 + Math.sin(t * 2) * 8;
+    const tg = ctx.createLinearGradient(0, 60, 0, 170);
     tg.addColorStop(0, '#fff6e4'); tg.addColorStop(0.55, '#ffc98a'); tg.addColorStop(1, '#f07a2a');
-    ctx.font = 'bold 132px ' + G.FONT_T; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = tg; ctx.fillText('烬渊', G.W / 2, 142);
+    ctx.font = 'bold 118px ' + G.FONT_T; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = tg; ctx.fillText('烬渊', G.W / 2, 116);
     ctx.restore();
-    divider(ctx, G.W / 2, 222, 170, '#ff9d4a');
-    text(ctx, '向 下 三 层 · 直 抵 渊 心', G.W / 2, 246, 16, '#d8b494', 'center');
+    divider(ctx, G.W / 2, 188, 170, '#ff9d4a');
+    text(ctx, '向 下 三 层 · 直 抵 渊 心', G.W / 2, 210, 15, '#d8b494', 'center');
 
-    if (G.button(ctx, G.W / 2 - 120, 286, 240, 56, '开 始 远 征', true)) G.newRun();
+    // 第一步：选择设备
+    text(ctx, '选择你的设备', G.W / 2, 244, 13, '#a89080', 'center');
+    if (modeCard(ctx, G.W / 2 - 214, 258, 204, 66, '电脑端', '键盘 + 鼠标', 'pc', !G.touch.on)) G.touch.on = false;
+    if (modeCard(ctx, G.W / 2 + 10, 258, 204, 66, '手机端', '触屏 · 请横屏', 'phone', G.touch.on)) G.touch.on = true;
 
-    panel(ctx, G.W / 2 - 270, 372, 540, 148, '#ff9d4a', 0.62);
-    const rows = G.touch.on ? [['左侧摇杆', '移动'], ['右侧摇杆', '瞄准并射击'], ['右侧按住不动', '自动瞄准最近敌人'], ['闪', '闪避（冲刺时无敌）'], ['点武器栏', '切换武器'], ['E', '拾取 · 开箱 · 购买']] : [['W A S D', '移动'], ['鼠标 / 左键', '瞄准 · 射击'], ['空格', '闪避（冲刺时无敌）'], ['Q / 滚轮', '切换武器'], ['E', '拾取 · 开箱 · 购买'], ['Esc / M', '暂停 · 静音']];
+    // 第二步：对应的操作方式
+    panel(ctx, G.W / 2 - 270, 338, 540, 136, '#ff9d4a', 0.62);
+    const rows = G.touch.on
+      ? [['左半屏拖动', '移动'], ['右半屏拖动', '瞄准并射击'], ['右半屏按住', '自动瞄准最近敌人'], ['「闪」按钮', '闪避（冲刺时无敌）'], ['点武器栏', '切换武器'], ['「E」按钮', '拾取 · 开箱 · 购买']]
+      : [['W A S D', '移动'], ['鼠标 / 左键', '瞄准 · 射击'], ['空格', '闪避（冲刺时无敌）'], ['Q / 滚轮', '切换武器'], ['E', '拾取 · 开箱 · 购买'], ['Esc / M', '暂停 · 静音']];
     rows.forEach((r, i) => {
-      const x = G.W / 2 - 246 + (i % 2) * 262, y = 398 + Math.floor(i / 2) * 42;
+      const x = G.W / 2 - 250 + (i % 2) * 262, y = 362 + Math.floor(i / 2) * 40;
       ctx.font = 'bold 12px ' + G.FONT;
       const kw = ctx.measureText(r[0]).width + 16;
       ctx.fillStyle = '#3a2e30'; rr(ctx, x, y - 12, kw, 24, 5); ctx.fill();
@@ -281,21 +287,54 @@
       text(ctx, r[0], x + kw / 2, y + 0.5, 12, '#ffcf9a', 'center', true);
       text(ctx, r[1], x + kw + 10, y + 0.5, 13, '#e0d6d0', 'left');
     });
-    text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 548, 13, '#9a8478', 'center');
+
+    // 第三步：开始
+    if (G.button(ctx, G.W / 2 - 120, 490, 240, 54, '开 始 远 征', true)) G.newRun();
+    text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 570, 12, '#9a8478', 'center');
   };
+
+  // 设备选择卡片：返回本帧是否被点击
+  function modeCard(ctx, x, y, w, h, title, sub, icon, sel) {
+    const I = G.input, hover = I.mx >= x && I.mx <= x + w && I.my >= y && I.my <= y + h, col = sel ? '#ffb05a' : '#8a7e86';
+    if (sel) { ctx.globalCompositeOperation = 'lighter'; G.glow(ctx, '#ff8a3c', x + w / 2, y + h / 2, w * 0.6, 0.3); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; }
+    const gr = ctx.createLinearGradient(0, y, 0, y + h);
+    gr.addColorStop(0, sel ? '#4a3426' : hover ? '#3a323c' : '#2a242e'); gr.addColorStop(1, sel ? '#2a1a12' : '#16121a');
+    ctx.fillStyle = gr; rr(ctx, x, y, w, h, 8); ctx.fill();
+    ctx.strokeStyle = sel ? '#ffb05a' : hover ? '#fff' : 'rgba(255,255,255,0.16)'; ctx.lineWidth = sel ? 2.5 : 1; ctx.stroke();
+    const ix = x + 40, iy = y + h / 2;
+    ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+    if (icon === 'pc') {
+      rr(ctx, ix - 17, iy - 14, 34, 22, 3); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ix, iy + 8); ctx.lineTo(ix, iy + 14); ctx.moveTo(ix - 10, iy + 15); ctx.lineTo(ix + 10, iy + 15); ctx.stroke();
+      ctx.fillStyle = G.rgba(col, 0.25); ctx.fillRect(ix - 13, iy - 10, 26, 14);
+    } else {
+      rr(ctx, ix - 19, iy - 11, 38, 22, 5); ctx.stroke();
+      ctx.fillStyle = G.rgba(col, 0.25); ctx.fillRect(ix - 13, iy - 7, 26, 14);
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(ix + 15.5, iy, 1.6, 0, TAU); ctx.fill();
+    }
+    text(ctx, title, x + 76, y + h / 2 - 10, 19, sel ? '#fff3e0' : '#c8bec4', 'left', true);
+    text(ctx, sub, x + 76, y + h / 2 + 13, 12, sel ? '#ffcf9a' : '#8a8088', 'left');
+    // 选中标记
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x + w - 22, iy, 8, 0, TAU); ctx.stroke();
+    if (sel) { ctx.fillStyle = '#ffb05a'; ctx.beginPath(); ctx.arc(x + w - 22, iy, 4.5, 0, TAU); ctx.fill(); }
+    if (hover && I.clicked) { I.clicked = false; G.sfx('ui'); return true; }
+    return false;
+  }
 
   G.drawPause = function (ctx) {
     const g = G.game;
     dim(ctx, 0.72);
-    panel(ctx, G.W / 2 - 170, 86, 340, 372, '#ff9d4a', 0.9);
-    glowText(ctx, '暂 停', G.W / 2, 134, 44, '#ffe9c8', '#ff9d4a', true);
-    divider(ctx, G.W / 2, 168, 110, '#ff9d4a');
-    if (G.button(ctx, G.W / 2 - 110, 192, 220, 48, '继续', true)) g.state = 'play';
-    if (G.button(ctx, G.W / 2 - 110, 252, 220, 48, '重新开始')) G.newRun();
-    if (G.button(ctx, G.W / 2 - 110, 312, 106, 48, G.audio.muted ? '声音 关' : '声音 开')) G.audio.muted = !G.audio.muted;
-    if (G.button(ctx, G.W / 2 + 4, 312, 106, 48, G.audio.musicOn ? '音乐 开' : '音乐 关')) G.audio.musicOn = !G.audio.musicOn;
-    if (G.button(ctx, G.W / 2 - 110, 372, 220, 48, '返回主菜单')) g.state = 'menu';
-    if (g.perksTaken.length) perkRow(ctx, g, 500);
+    panel(ctx, G.W / 2 - 170, 66, 340, 432, '#ff9d4a', 0.9);
+    glowText(ctx, '暂 停', G.W / 2, 112, 44, '#ffe9c8', '#ff9d4a', true);
+    divider(ctx, G.W / 2, 146, 110, '#ff9d4a');
+    if (G.button(ctx, G.W / 2 - 110, 168, 220, 48, '继续', true)) g.state = 'play';
+    if (G.button(ctx, G.W / 2 - 110, 228, 220, 48, '重新开始')) G.newRun();
+    if (G.button(ctx, G.W / 2 - 110, 288, 106, 48, G.audio.muted ? '声音 关' : '声音 开')) G.audio.muted = !G.audio.muted;
+    if (G.button(ctx, G.W / 2 + 4, 288, 106, 48, G.audio.musicOn ? '音乐 开' : '音乐 关')) G.audio.musicOn = !G.audio.musicOn;
+    if (G.button(ctx, G.W / 2 - 110, 348, 220, 48, G.touch.on ? '操作：手机端' : '操作：电脑端')) G.touch.on = !G.touch.on;
+    if (G.button(ctx, G.W / 2 - 110, 408, 220, 48, '返回主菜单')) g.state = 'menu';
+    text(ctx, G.touch.on ? '左半屏移动 · 右半屏瞄准射击 · 「闪」闪避 · 点武器栏换枪' : 'WASD 移动 · 鼠标瞄准射击 · 空格闪避 · Q 换枪 · E 互动', G.W / 2, 474, 12, '#a89ea8', 'center');
+    if (g.perksTaken.length) perkRow(ctx, g, 540);
   };
   function perkRow(ctx, g, y) {
     const list = g.perksTaken, n = Math.min(list.length, 14), x0 = G.W / 2 - (n - 1) * 21;

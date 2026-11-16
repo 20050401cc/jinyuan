@@ -299,8 +299,8 @@
     ctx.translate(ox, oy);
     if (g.floor === 1) {
       const r = g.dungeon.start;
-      if (!G.touch.on) G.text(ctx, 'WASD 移动 · 鼠标瞄准 · 左键射击', r.cx, r.cy - 96, 14, 'rgba(255,236,210,0.5)', 'center');
-      if (!G.touch.on) G.text(ctx, '空格 闪避 · Q 切换武器 · E 互动', r.cx, r.cy + 100, 14, 'rgba(255,236,210,0.5)', 'center');
+      G.text(ctx, G.touch.on ? '左半屏拖动移动 · 右半屏拖动瞄准射击' : 'WASD 移动 · 鼠标瞄准 · 左键射击', r.cx, r.cy - 96, 14, 'rgba(255,236,210,0.5)', 'center');
+      G.text(ctx, G.touch.on ? '「闪」闪避 · 点武器栏换枪 · 「E」互动' : '空格 闪避 · Q 切换武器 · E 互动', r.cx, r.cy + 100, 14, 'rgba(255,236,210,0.5)', 'center');
     }
     drawGlowLayer(ctx, g, th);
     drawEnemyOverlays(ctx, g);
