@@ -111,7 +111,7 @@
     ctx.fillStyle = 'rgba(7,4,9,0.8)'; ctx.fillRect(0, 0, G.W, G.H);
     const w = 860, x0 = (G.W - w) / 2;
     U.panel(ctx, x0, 22, w, 560, '#ff9d4a', 0.92);
-    U.glowText(ctx, '成 就', G.W / 2, 56, 34, '#ffe9c8', '#ff9d4a', true);
+    U.glowText(ctx, '成就', G.W / 2, 56, 32, '#ffe9c8', '#ff9d4a', true);
     G.text(ctx, A.count() + ' / ' + LIST.length, G.W / 2, 86, 13, '#c8b0a0', 'center', true);
     const s = A.stats;
     G.text(ctx, G.tf('累计击败 {0} · 开箱 {1} · 购买 {2} · 闪避 {3} · 武器 {4}/{5}', s.kills, s.chests, s.buys, s.dashes, s.weapons.length, G.WEAPON_IDS.length), G.W / 2, 104, 11, '#8a8088', 'center');

@@ -3,11 +3,11 @@
 (function () {
   const G = window.G;
   const KEY = 'jinyuan.settings.v1';
-  G.VERSION = '1.3.0';
+  G.VERSION = '1.4.0';
   G.desktop = window.jinyuanDesktop || null; // 桌面版（Electron）注入的接口
 
   const DEF = {
-    lang: '', story: 'first', inputMode: 'auto', master: 0.8, sfx: 0.8, music: 0.6,
+    lang: '', story: 'first', difficulty: 'easy', inputMode: 'auto', master: 0.8, sfx: 0.8, music: 0.6,
     fullscreen: true, hires: true, shake: 1, dmgNum: true, rumble: true, fps: false
   };
   const S = G.settings = Object.assign({}, DEF);
@@ -102,7 +102,7 @@
     if (g.back === 'menu') G.drawMenuBackdrop(ctx);
     ctx.fillStyle = 'rgba(7,4,9,0.78)'; ctx.fillRect(0, 0, G.W, G.H);
     U.panel(ctx, x0, 18, w, 570, '#ff9d4a', 0.92);
-    U.glowText(ctx, '设 置', G.W / 2, 54, 34, '#ffe9c8', '#ff9d4a', true);
+    U.glowText(ctx, '设置', G.W / 2, 54, 32, '#ffe9c8', '#ff9d4a', true);
     U.divider(ctx, G.W / 2, 80, 120, '#ff9d4a');
     ROWS.forEach((r, i) => {
       const y = 90 + i * 33, it = G.uiItem(x0 + 24, y, w - 48, 30, { lr: true, primary: i === 0 });

@@ -19,6 +19,7 @@
   // 敌方射击的简写
   G.eshoot = function (x, y, ang, speed, dmg, o) {
     o = o || {};
+    speed *= G.diff().bspd;
     return G.spawnBullet({
       x, y, vx: Math.cos(ang) * speed, vy: Math.sin(ang) * speed, dmg: dmg * G.game.dmgMul,
       r: o.r || 5, color: o.color || '#ff5d5d', life: o.life || 6, homing: o.homing || 0, friendly: false

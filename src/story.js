@@ -302,7 +302,9 @@
     c.restore();
     if (k < 1) glow(c, '#ffd090', W / 2 - tw / 2 - 30 + (tw + 60) * k, H / 2 - 20, 80, 0.9 * (1 - k));
     c.globalAlpha = ease((t - 1.6) / 1);
-    G.text(c, '向 下 三 层 · 直 抵 渊 心', W / 2, H / 2 + 70, 17, '#d8b494', 'center');
+    if ('letterSpacing' in c) c.letterSpacing = G.cjk() ? '0.3em' : '0.12em';
+    G.text(c, '向下三层，直抵渊心', W / 2, H / 2 + 70, 16, '#c9a888', 'center');
+    if ('letterSpacing' in c) c.letterSpacing = '0px';
     c.globalAlpha = 1;
     embers(c, W, H, t, 50, '#ffb066', 40, 23);
   };

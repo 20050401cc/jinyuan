@@ -9,33 +9,40 @@
     ctx.beginPath();
     if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
   }
-  // 带渐变、内高光和角标的面板
+  // 界面风格「锻铁与余烬」：黑铁底板、切角、暖金属细线，余烬橙是唯一的强调色
+  const UI = G.UIC = { ink: '#0f0b0c', iron: '#171112', ironHi: '#231a18', line: 'rgba(232,190,150,0.17)', lineHi: 'rgba(255,184,120,0.62)', ember: '#e2732b', emberHi: '#f58a3d', text: '#efe4da', muted: '#9c8c84' };
+  function chamfer(ctx, x, y, w, h, c) {
+    ctx.beginPath();
+    ctx.moveTo(x + c, y); ctx.lineTo(x + w - c, y); ctx.lineTo(x + w, y + c); ctx.lineTo(x + w, y + h - c);
+    ctx.lineTo(x + w - c, y + h); ctx.lineTo(x + c, y + h); ctx.lineTo(x, y + h - c); ctx.lineTo(x, y + c); ctx.closePath();
+  }
+  G.chamfer = chamfer;
   function panel(ctx, x, y, w, h, accent, alpha) {
-    const a = alpha == null ? 0.82 : alpha;
-    const gr = ctx.createLinearGradient(0, y, 0, y + h);
-    gr.addColorStop(0, 'rgba(34,27,36,' + a + ')'); gr.addColorStop(1, 'rgba(12,9,14,' + a + ')');
-    ctx.fillStyle = gr; rr(ctx, x, y, w, h, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.09)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(x + 7, y + 1, w - 14, 1);
-    if (accent) {
-      ctx.strokeStyle = accent; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x + 1, y + 13); ctx.lineTo(x + 1, y + 5); ctx.quadraticCurveTo(x + 1, y + 1, x + 5, y + 1); ctx.lineTo(x + 13, y + 1); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x + w - 1, y + h - 13); ctx.lineTo(x + w - 1, y + h - 5); ctx.quadraticCurveTo(x + w - 1, y + h - 1, x + w - 5, y + h - 1); ctx.lineTo(x + w - 13, y + h - 1); ctx.stroke();
-    }
+    const a = alpha == null ? 0.88 : alpha, c = Math.min(10, h / 4);
+    chamfer(ctx, x, y, w, h, c);
+    ctx.fillStyle = 'rgba(15,11,12,' + a + ')'; ctx.fill();
+    ctx.save(); ctx.clip();
+    const gr = ctx.createLinearGradient(0, y, 0, y + Math.min(h, 60));
+    gr.addColorStop(0, 'rgba(255,214,170,' + (0.05 * a).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(255,214,170,0)');
+    ctx.fillStyle = gr; ctx.fillRect(x, y, w, Math.min(h, 60));
+    ctx.restore();
+    chamfer(ctx, x + 0.5, y + 0.5, w - 1, h - 1, c); ctx.strokeStyle = UI.line; ctx.lineWidth = 1; ctx.stroke();
+    if (accent) { ctx.fillStyle = accent; ctx.fillRect(x + c + 2, y, Math.min(42, w * 0.3), 2); ctx.fillRect(x + w - c - 2 - 10, y + h - 2, 10, 2); }
   }
   // 即时模式按钮：绘制并返回本帧是否被点击
   G.button = function (ctx, x, y, w, h, label, primary) {
-    const it = G.uiItem(x, y, w, h, { primary }), hover = it.hover;
-    const a0 = ctx.globalAlpha;
-    if (hover) { ctx.globalCompositeOperation = 'lighter'; G.glow(ctx, primary ? '#ff8a3c' : '#8a7aa0', x + w / 2, y + h / 2, w * 0.62, 0.35 * a0); ctx.globalAlpha = a0; ctx.globalCompositeOperation = 'source-over'; }
-    const gr = ctx.createLinearGradient(0, y, 0, y + h);
-    if (primary) { gr.addColorStop(0, hover ? '#ffc477' : '#f7a653'); gr.addColorStop(1, hover ? '#f08a36' : '#d86f24'); }
-    else { gr.addColorStop(0, hover ? '#4a4252' : '#332d3a'); gr.addColorStop(1, hover ? '#322c38' : '#201c26'); }
-    ctx.fillStyle = gr; rr(ctx, x, y, w, h, 6); ctx.fill();
-    ctx.strokeStyle = hover ? '#fff' : (primary ? '#ffd9a8' : 'rgba(255,255,255,0.2)'); ctx.lineWidth = hover ? 2 : 1; ctx.stroke();
-    ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.fillRect(x + 6, y + 2, w - 12, 1);
-    ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(x + 4, y + h - 4, w - 8, 2);
-    text(ctx, label, x + w / 2, y + h / 2, h < 36 ? 13 : 17, primary ? '#2a1204' : '#f0eaf2', 'center', true, false, w - 14);
+    const it = G.uiItem(x, y, w, h, { primary }), hover = it.hover, c = Math.min(8, h / 4);
+    chamfer(ctx, x, y, w, h, c);
+    if (primary) {
+      ctx.fillStyle = hover ? UI.emberHi : UI.ember; ctx.fill();
+      ctx.fillStyle = 'rgba(255,226,190,0.55)'; ctx.fillRect(x + c, y + 1, w - c * 2, 1);
+      ctx.fillStyle = 'rgba(70,22,4,0.45)'; ctx.fillRect(x + c, y + h - 2, w - c * 2, 2);
+    } else {
+      ctx.fillStyle = hover ? UI.ironHi : UI.iron; ctx.fill();
+      chamfer(ctx, x + 0.5, y + 0.5, w - 1, h - 1, c); ctx.strokeStyle = hover ? UI.lineHi : UI.line; ctx.lineWidth = 1; ctx.stroke();
+      if (hover) { ctx.fillStyle = UI.ember; ctx.fillRect(x + 1, y + c, 2, h - c * 2); }
+    }
+    text(ctx, label, x + w / 2, y + h / 2 + 0.5, h < 36 ? 13 : 16, primary ? '#1c0c04' : hover ? '#fff' : '#e6dcd4', 'center', true, false, w - 16);
     if (it.click) { G.sfx('ui'); return true; }
     return false;
   };
@@ -204,15 +211,23 @@
     return { text: G.tf('替换 {0}：DPS {1} → {2} · 每秒耗能 {3} → {4}', G.tr(G.WEAPONS[now].name), b.dps, a.dps, b.eps, a.eps), color: up && cheap ? '#9dff8a' : !up && !cheap ? '#ffb0a0' : '#ffe27a', swap: true };
   }
 
+  // 细分隔线：两段渐隐的金属线，中间一枚小菱形
   function divider(ctx, x, y, w, color) {
+    if (w < 1) return;
     const gr = ctx.createLinearGradient(x - w, 0, x + w, 0);
-    gr.addColorStop(0, G.rgba(color, 0)); gr.addColorStop(0.5, G.rgba(color, 0.9)); gr.addColorStop(1, G.rgba(color, 0));
-    ctx.fillStyle = gr; ctx.fillRect(x - w, y, w * 2, 1.5);
-    ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x + 4, y + 0.7); ctx.lineTo(x, y + 5.5); ctx.lineTo(x - 4, y + 0.7); ctx.fill();
+    gr.addColorStop(0, G.rgba(color, 0)); gr.addColorStop(0.42, G.rgba(color, 0.6)); gr.addColorStop(0.58, G.rgba(color, 0.6)); gr.addColorStop(1, G.rgba(color, 0));
+    ctx.fillStyle = gr; ctx.fillRect(x - w, y, w - 9, 1); ctx.fillRect(x + 9, y, w - 9, 1);
+    ctx.save(); ctx.translate(x, y + 0.5); ctx.rotate(Math.PI / 4); ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.strokeRect(-2.5, -2.5, 5, 5); ctx.restore();
   }
+  // 标题：只留一层很淡的光，英文标题用大写，字距略微放开
   function glowText(ctx, str, x, y, size, color, glow, title) {
-    ctx.save(); ctx.shadowColor = glow; ctx.shadowBlur = 22;
-    G.text(ctx, str, x, y, size, color, 'center', true, title);
+    ctx.save();
+    ctx.shadowColor = G.rgba(glow, 0.55); ctx.shadowBlur = size > 40 ? 16 : 8;
+    let s = G.tr(str);
+    if (G.lang === 'en' && size >= 28) s = String(s).toUpperCase();
+    if ('letterSpacing' in ctx) ctx.letterSpacing = size >= 28 ? (G.cjk() ? '0.12em' : '0.06em') : '0px';
+    G.text(ctx, s, x, y, size, color, 'center', true, title);
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
     ctx.restore();
   }
 
@@ -227,6 +242,7 @@
     ctx.beginPath(); ctx.ellipse(77, 53, 5, 6, 0, 0, TAU); ctx.fillStyle = '#ffcf3e'; ctx.fill(); ctx.strokeStyle = '#140e14'; ctx.lineWidth = 1.5; ctx.stroke();
     text(ctx, String(p.gold), 88, 54, 14, '#ffe9a8', 'left', true);
     text(ctx, G.tf('击杀 {0}', g.kills), 138, 54, 12, '#a89ea8', 'left', false, false, 78);
+    const D = G.diff(); ctx.fillStyle = D.color; ctx.fillRect(16, 76, 3, 12); text(ctx, D.name, 24, 82.5, 11, D.color, 'left', true);
 
     minimap(ctx, g, th);
 
@@ -324,7 +340,7 @@
       ctx.globalAlpha = 1;
     }
 
-    if (G.debug.fps) text(ctx, 'FPS ' + Math.round(G.fps || 0) + '  E ' + g.enemies.length + '  B ' + (g.bullets.length + g.ebullets.length) + '  P ' + g.particles.length, 14, 84, 12, '#9f9', 'left');
+    if (G.debug.fps) text(ctx, 'FPS ' + Math.round(G.fps || 0) + '  E ' + g.enemies.length + '  B ' + (g.bullets.length + g.ebullets.length) + '  P ' + g.particles.length, 14, 102, 12, '#9f9', 'left');
   };
 
   // ---------- 各种覆盖界面 ----------
@@ -391,7 +407,9 @@
     if (it < 1) { ctx.globalCompositeOperation = 'lighter'; G.glow(ctx, '#ffb066', tx0 + (tw + 60) * ie, 116, 90, 0.8 * (1 - it)); ctx.globalCompositeOperation = 'source-over'; }
     ctx.globalAlpha = G.clamp((G.introT - 0.7) / 0.6, 0, 1);
     divider(ctx, G.W / 2, 188, 170 * ctx.globalAlpha, '#ff9d4a');
-    text(ctx, '向 下 三 层 · 直 抵 渊 心', G.W / 2, 210, 15, '#d8b494', 'center');
+    if ('letterSpacing' in ctx) ctx.letterSpacing = G.cjk() ? '0.3em' : '0.12em';
+    text(ctx, '向下三层，直抵渊心', G.W / 2, 211, 14, '#c9a888', 'center');
+    if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
     ctx.globalAlpha = 1;
 
   };
@@ -424,53 +442,66 @@
 
     // 第二步：对应的操作方式
     // 手机端多一个体感开关，说明框收紧一些，给开始按钮留出空间
-    const T = G.touch.on, rowH = T ? 35 : 40;
-    panel(ctx, G.W / 2 - 270, 338, 540, T ? 118 : 136, '#ff9d4a', 0.62);
+    const T = G.touch.on, rowH = 34;
+    panel(ctx, G.W / 2 - 270, 336, 540, 116, null, 0.7);
     const rows = mode === 'pad' ? [['左摇杆', '移动'], ['右摇杆 / RT', '瞄准 · 射击'], ['A / LT', '闪避（冲刺时无敌）'], ['Y / LB', '切换武器'], ['X', '拾取 · 开箱 · 购买'], ['Start', '暂停']]
       : G.touch.on
       ? [G.motion.status === 'ok' ? ['倾斜设备', '移动（甩动可闪避）'] : ['左半屏拖动', '移动'], ['右半屏拖动', '瞄准并射击'], ['右半屏按住', '自动瞄准最近敌人'], ['「闪」按钮', '闪避（冲刺时无敌）'], ['点武器栏', '切换武器'], ['「E」按钮', '拾取 · 开箱 · 购买']]
       : [['W A S D', '移动'], ['鼠标 / 左键', '瞄准 · 射击'], ['空格', '闪避（冲刺时无敌）'], ['Q / 滚轮', '切换武器'], ['E', '拾取 · 开箱 · 购买'], ['Esc / M', '暂停 · 静音']];
     rows.forEach((r, i) => {
-      const x = G.W / 2 - 250 + (i % 2) * 262, y = (T ? 359 : 362) + Math.floor(i / 2) * rowH;
+      const x = G.W / 2 - 250 + (i % 2) * 262, y = 360 + Math.floor(i / 2) * rowH;
       ctx.font = 'bold 12px ' + G.FONT;
       const kw = ctx.measureText(G.tr(r[0])).width + 16;
-      ctx.fillStyle = '#3a2e30'; rr(ctx, x, y - 12, kw, 24, 5); ctx.fill();
-      ctx.strokeStyle = 'rgba(255,176,90,0.6)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#21181a'; ctx.fillRect(x, y - 11, kw, 22);
+      ctx.fillStyle = UI.ember; ctx.fillRect(x, y + 10, kw, 1);
       text(ctx, r[0], x + kw / 2, y + 0.5, 12, '#ffcf9a', 'center', true);
       text(ctx, r[1], x + kw + 10, y + 0.5, 13, '#e0d6d0', 'left', false, false, 250 - kw);
     });
 
     // 第三步：开始
+    diffRow(ctx, 462);
     if (G.touch.on) {
-      G.motionToggle(ctx, G.W / 2 - 170, 468, 340, 30);
-      startButtons(ctx, 508, 48);
-      if (G.motion.status === 'ok') text(ctx, '以开始时的握持姿势为中立位，暂停再继续可重新校准', G.W / 2, 578, 11, '#9a8478', 'center', false, false, G.W - 80);
-      else text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 578, 12, '#9a8478', 'center', false, false, G.W - 80);
+      G.motionToggle(ctx, G.W / 2 - 170, 500, 340, 26);
+      startButtons(ctx, 534, 44);
     } else {
-      startButtons(ctx, 490, 54);
-      text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 570, 12, '#9a8478', 'center', false, false, G.W - 80);
+      startButtons(ctx, 506, 50);
+      text(ctx, G.DIFFS[G.settings.difficulty || 'easy'].desc, G.W / 2, 576, 12, '#9a8478', 'center', false, false, G.W - 80);
     }
     ctx.globalAlpha = 1;
   };
+
+  // 难度选择：四段式开关，选中段填充该难度的颜色
+  function diffRow(ctx, y) {
+    const ids = G.DIFF_IDS, w = 92, h = 28, gap = 6, x0 = G.W / 2 - (ids.length * w + (ids.length - 1) * gap) / 2 + 30;
+    text(ctx, '难度', x0 - 16, y + h / 2, 12, UI.muted, 'right', true);
+    ids.forEach((id, i) => {
+      const D = G.DIFFS[id], x = x0 + i * (w + gap), sel = (G.settings.difficulty || 'easy') === id;
+      const it = G.uiItem(x, y, w, h), hov = it.hover;
+      chamfer(ctx, x, y, w, h, 6);
+      ctx.fillStyle = sel ? G.rgba(D.color, 0.22) : hov ? UI.ironHi : 'rgba(18,13,13,0.9)'; ctx.fill();
+      chamfer(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 6); ctx.strokeStyle = sel ? D.color : hov ? UI.lineHi : UI.line; ctx.lineWidth = 1; ctx.stroke();
+      if (sel) { ctx.fillStyle = D.color; ctx.fillRect(x + 6, y + h - 2, w - 12, 2); }
+      text(ctx, D.name, x + w / 2, y + h / 2 + 0.5, 13, sel ? '#fff' : hov ? '#e6dcd4' : '#a89a92', 'center', true, false, w - 10);
+      if (it.click) { G.settings.difficulty = id; G.saveSettings(); G.sfx('ui'); }
+    });
+  }
 
   // 有存档时显示「继续远征」和「新的远征」，否则只有「开始远征」
   function startButtons(ctx, y, h) {
     const m = G.save.meta;
     if (m) {
-      if (G.button(ctx, G.W / 2 - 250, y, 260, h, G.tf('继续远征 · 第 {0} 层', m.floor), true)) { if (!G.save.resume()) G.newRun(); }
+      if (G.button(ctx, G.W / 2 - 250, y, 260, h, G.tf('继续远征 · 第 {0} 层', m.floor) + (m.diff && G.DIFFS[m.diff] ? ' · ' + G.tr(G.DIFFS[m.diff].name) : ''), true)) { if (!G.save.resume()) G.newRun(); }
       else if (G.button(ctx, G.W / 2 + 20, y, 230, h, '新的远征')) G.newRun();
-    } else if (G.button(ctx, G.W / 2 - 120, y, 240, h, '开 始 远 征', true)) G.newRun();
+    } else if (G.button(ctx, G.W / 2 - 120, y, 240, h, '开始远征', true)) G.newRun();
   }
 
   // 设备选择卡片：返回本帧是否被点击
   function modeCard(ctx, x, y, w, h, title, sub, icon, sel) {
-    const it = G.uiItem(x, y, w, h), hover = it.hover, col = sel ? '#ffb05a' : '#8a7e86';
-    const a0 = ctx.globalAlpha;
-    if (sel) { ctx.globalCompositeOperation = 'lighter'; G.glow(ctx, '#ff8a3c', x + w / 2, y + h / 2, w * 0.6, 0.3 * a0); ctx.globalAlpha = a0; ctx.globalCompositeOperation = 'source-over'; }
-    const gr = ctx.createLinearGradient(0, y, 0, y + h);
-    gr.addColorStop(0, sel ? '#4a3426' : hover ? '#3a323c' : '#2a242e'); gr.addColorStop(1, sel ? '#2a1a12' : '#16121a');
-    ctx.fillStyle = gr; rr(ctx, x, y, w, h, 8); ctx.fill();
-    ctx.strokeStyle = hover ? '#fff' : sel ? '#ffb05a' : 'rgba(255,255,255,0.16)'; ctx.lineWidth = sel || hover ? 2.5 : 1; ctx.stroke();
+    const it = G.uiItem(x, y, w, h), hover = it.hover, col = sel ? UI.emberHi : '#8a7c76';
+    chamfer(ctx, x, y, w, h, 9);
+    ctx.fillStyle = sel ? '#22150f' : hover ? UI.ironHi : 'rgba(18,13,13,0.9)'; ctx.fill();
+    chamfer(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 9); ctx.strokeStyle = sel ? 'rgba(245,138,61,0.75)' : hover ? UI.lineHi : UI.line; ctx.lineWidth = 1; ctx.stroke();
+    if (sel) { ctx.fillStyle = UI.ember; ctx.fillRect(x + 9, y, w - 18, 2); }
     const ix = x + 34, iy = y + h / 2;
     ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
     if (icon === 'pc') {
@@ -486,10 +517,10 @@
       ctx.fillStyle = col; ctx.fillRect(ix - 11, iy - 3, 7, 2); ctx.fillRect(ix - 8.5, iy - 5.5, 2, 7);
       ctx.beginPath(); ctx.arc(ix + 8, iy - 3, 1.7, 0, TAU); ctx.arc(ix + 12, iy, 1.7, 0, TAU); ctx.fill();
     }
-    text(ctx, title, x + 64, y + h / 2 - 10, 18, sel ? '#fff3e0' : '#c8bec4', 'left', true, false, w - 104);
+    text(ctx, title, x + 64, y + h / 2 - 10, 17, sel ? '#fff3e0' : '#c8bec4', 'left', true, false, w - 104);
     text(ctx, sub, x + 64, y + h / 2 + 13, 11, sel ? '#ffcf9a' : '#8a8088', 'left', false, false, w - 84);
-    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x + w - 17, y + 15, 6, 0, TAU); ctx.stroke();
-    if (sel) { ctx.fillStyle = '#ffb05a'; ctx.beginPath(); ctx.arc(x + w - 17, y + 15, 3.5, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = sel ? UI.emberHi : 'rgba(232,190,150,0.3)'; ctx.lineWidth = 1; ctx.strokeRect(x + w - 23.5, y + 9.5, 11, 11);
+    if (sel) { ctx.fillStyle = UI.emberHi; ctx.fillRect(x + w - 21, y + 12, 6, 6); }
     if (it.click) { G.sfx('ui'); return true; }
     return false;
   }
@@ -498,7 +529,7 @@
     const g = G.game, T = G.touch.on, x = G.W / 2 - 110, h = 44;
     dim(ctx, 0.72);
     panel(ctx, G.W / 2 - 190, 60, 380, T ? 420 : 370, '#ff9d4a', 0.9);
-    glowText(ctx, '暂 停', G.W / 2, 104, 42, '#ffe9c8', '#ff9d4a', true);
+    glowText(ctx, '暂停', G.W / 2, 104, 38, '#ffe9c8', '#ff9d4a', true);
     divider(ctx, G.W / 2, 136, 110, '#ff9d4a');
     let y = 158;
     if (G.button(ctx, x, y, 220, h, '继续', true)) g.state = 'play';
@@ -551,7 +582,7 @@
     for (let i = 0; i < n; i++) {
       const k = list[i];
       ctx.save(); ctx.translate(x0 + i * 42, y);
-      G.poly(ctx, 6, 18, Math.PI / 6); ctx.fillStyle = '#17131c'; ctx.fill(); ctx.strokeStyle = k.color; ctx.lineWidth = 2; ctx.stroke();
+      ctx.rotate(Math.PI / 4); ctx.fillStyle = '#0d0909'; ctx.fillRect(-13, -13, 26, 26); ctx.strokeStyle = k.color; ctx.lineWidth = 1.5; ctx.strokeRect(-13, -13, 26, 26);
       ctx.restore();
       text(ctx, k.glyph, x0 + i * 42, y + 1, 16, k.color, 'center', true);
     }
@@ -571,32 +602,30 @@
       const it = G.uiItem(x, y, cw, chh, { primary: i === 1 }), hover = enter >= 1 && it.hover;
       const yy = y + (1 - ease) * 60 - (hover ? 10 : 0);
       ctx.globalAlpha = ease;
-      if (hover) { ctx.globalCompositeOperation = 'lighter'; G.glow(ctx, k.color, x + cw / 2, yy + chh / 2, 230, 0.3); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; }
-      const bg = ctx.createLinearGradient(0, yy, 0, yy + chh);
-      bg.addColorStop(0, hover ? '#3a3040' : '#2a232e'); bg.addColorStop(1, '#141018');
-      ctx.fillStyle = bg; rr(ctx, x, yy, cw, chh, 12); ctx.fill();
-      ctx.strokeStyle = hover ? k.color : 'rgba(255,255,255,0.14)'; ctx.lineWidth = hover ? 3 : 1; ctx.stroke();
-      ctx.save(); rr(ctx, x, yy, cw, chh, 12); ctx.clip();
-      const top = ctx.createLinearGradient(0, yy, 0, yy + 150);
-      top.addColorStop(0, G.rgba(k.color, 0.3)); top.addColorStop(1, G.rgba(k.color, 0));
-      ctx.fillStyle = top; ctx.fillRect(x, yy, cw, 150);
-      if (hover) { const sx = x - 80 + ((g.time * 260) % (cw + 160)); ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.beginPath(); ctx.moveTo(sx, yy); ctx.lineTo(sx + 40, yy); ctx.lineTo(sx - 20, yy + chh); ctx.lineTo(sx - 60, yy + chh); ctx.fill(); }
+      chamfer(ctx, x, yy, cw, chh, 12);
+      ctx.fillStyle = hover ? '#1f1715' : 'rgba(18,13,13,0.96)'; ctx.fill();
+      ctx.save(); ctx.clip();
+      const top = ctx.createLinearGradient(0, yy, 0, yy + 170);
+      top.addColorStop(0, G.rgba(k.color, hover ? 0.14 : 0.08)); top.addColorStop(1, G.rgba(k.color, 0));
+      ctx.fillStyle = top; ctx.fillRect(x, yy, cw, 170);
+      ctx.fillStyle = k.color; ctx.fillRect(x, yy, cw, 3);
       ctx.restore();
-      ctx.globalCompositeOperation = 'lighter'; G.glow(ctx, k.color, x + cw / 2, yy + 92, 70, 0.35 * ease); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = ease;
-      ctx.save(); ctx.translate(x + cw / 2, yy + 92);
-      G.poly(ctx, 6, 48, Math.PI / 6 + (hover ? Math.sin(g.time * 3) * 0.08 : 0)); ctx.fillStyle = '#0e0b12'; ctx.fill(); ctx.strokeStyle = k.color; ctx.lineWidth = 3; ctx.stroke();
-      G.poly(ctx, 6, 40, Math.PI / 6); ctx.strokeStyle = G.rgba(k.color, 0.35); ctx.lineWidth = 1; ctx.stroke();
+      chamfer(ctx, x + 0.5, yy + 0.5, cw - 1, chh - 1, 12); ctx.strokeStyle = hover ? G.rgba(k.color, 0.9) : UI.line; ctx.lineWidth = 1; ctx.stroke();
+      ctx.save(); ctx.translate(x + cw / 2, yy + 92); ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#0d0909'; ctx.fillRect(-32, -32, 64, 64);
+      ctx.strokeStyle = k.color; ctx.lineWidth = 1.5; ctx.strokeRect(-32, -32, 64, 64);
+      ctx.strokeStyle = G.rgba(k.color, 0.3); ctx.lineWidth = 1; ctx.strokeRect(-26, -26, 52, 52);
       ctx.restore();
-      text(ctx, k.glyph, x + cw / 2, yy + 94, 44, k.color, 'center', true, true);
-      text(ctx, k.name, x + cw / 2, yy + 176, 23, '#fff', 'center', true, false, cw - 24);
-      if (k.tag) { const tg = k.tag === 2 ? '进化' : '机制'; ctx.font = 'bold 11px ' + G.FONT; const tw = ctx.measureText(G.tr(tg)).width + 16; ctx.fillStyle = G.rgba(k.color, 0.2); rr(ctx, x + cw / 2 - tw / 2, yy + 14, tw, 20, 10); ctx.fill(); ctx.strokeStyle = k.color; ctx.lineWidth = 1; ctx.stroke(); text(ctx, tg, x + cw / 2, yy + 24.5, 11, k.color, 'center', true); }
+      text(ctx, k.glyph, x + cw / 2, yy + 94, 38, k.color, 'center', true, true);
+      text(ctx, k.name, x + cw / 2, yy + 178, 21, '#fff', 'center', true, false, cw - 24);
+      if (k.tag) { const tg = k.tag === 2 ? '进化' : '机制'; ctx.font = 'bold 11px ' + G.FONT; const tw = ctx.measureText(G.tr(tg)).width + 14; ctx.fillStyle = G.rgba(k.color, 0.16); ctx.fillRect(x + cw - tw - 12, yy + 14, tw, 19); text(ctx, tg, x + cw - 12 - tw / 2, yy + 24, 11, k.color, 'center', true); }
       if (k.evo) text(ctx, G.tf('{0} → {1}', G.tr(G.WEAPONS[k.evo.from].name), G.tr(k.name)), x + cw / 2, yy + 150, 11, '#ffe9c8', 'center', false, false, cw - 30);
       divider(ctx, x + cw / 2, yy + 198, 56, k.color);
       ctx.font = '14px ' + G.FONT;
       const many = G.wrapLines(ctx, k.desc, cw - 44).length > 2;
       wrap(ctx, k.desc, x + cw / 2, yy + (many ? 218 : 224), cw - 44, many ? 18 : 21, many ? 12.5 : 14, '#d0c8d0');
-      ctx.fillStyle = hover ? '#f7a653' : '#3a343e'; rr(ctx, x + cw / 2 - 12, yy + chh - 34, 24, 22, 5); ctx.fill();
-      text(ctx, String(i + 1), x + cw / 2, yy + chh - 22.5, 13, hover ? '#2a1204' : '#aaa', 'center', true);
+      ctx.strokeStyle = hover ? UI.emberHi : UI.line; ctx.lineWidth = 1; ctx.strokeRect(x + cw / 2 - 11.5, yy + chh - 33.5, 23, 21);
+      text(ctx, String(i + 1), x + cw / 2, yy + chh - 22.5, 12, hover ? UI.emberHi : UI.muted, 'center', true);
       ctx.globalAlpha = 1;
       if (g.stateT > 0.5 && ((hover && it.click) || I.pressed['Digit' + (i + 1)])) { G.choosePerk(i); }
     });
@@ -619,13 +648,13 @@
     text(ctx, win ? '烬渊之心已熄灭，你带着余温回到地面。' : G.tf('你倒在了第 {0} 层 · {1}', g.floor, G.tr(G.theme().name)), G.W / 2, 178, 15, '#c8bcc0', 'center', false, false, 640);
     panel(ctx, G.W / 2 - 230, 204, 460, 176, col, 0.8);
     const m = Math.floor(g.runTime / 60), s = Math.floor(g.runTime % 60);
-    const rows = [['抵达层数', g.floor + ' / ' + G.MAX_FLOOR], ['击杀敌人', g.kills], ['获得金币', g.goldTotal], ['用时', G.tf('{0} 分 {1} 秒', m, (s < 10 ? '0' : '') + s)], ['承受伤害', g.dmgTaken]];
+    const rows = [['难度', G.tr(G.diff().name)], ['抵达层数', g.floor + ' / ' + G.MAX_FLOOR], ['击杀敌人', g.kills], ['获得金币', g.goldTotal], ['用时', G.tf('{0} 分 {1} 秒', m, (s < 10 ? '0' : '') + s)], ['承受伤害', g.dmgTaken]];
     rows.forEach((r, i) => {
-      const ra = G.clamp((g.stateT - 0.6 - i * 0.08) / 0.25, 0, 1), y = 230 + i * 31;
+      const ra = G.clamp((g.stateT - 0.6 - i * 0.08) / 0.25, 0, 1), y = 226 + i * 27;
       ctx.globalAlpha = ra * a;
       text(ctx, r[0], G.W / 2 - 200, y, 15, '#a89ea8', 'left', false, false, 260);
-      text(ctx, String(r[1]), G.W / 2 + 200, y, 16, '#fff', 'right', true);
-      if (i < 4) { ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(G.W / 2 - 200, y + 15, 400, 1); }
+      text(ctx, String(r[1]), G.W / 2 + 200, y, 16, i === 0 ? G.diff().color : '#fff', 'right', true);
+      if (i < rows.length - 1) { ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(G.W / 2 - 200, y + 13, 400, 1); }
     });
     ctx.globalAlpha = a;
     if (g.perksTaken.length) perkRow(ctx, g, 414);

@@ -142,7 +142,7 @@
   let nextId = 1;
   G.spawnEnemy = function (type, x, y, spawnT) {
     const g = G.game, def = G.ENEMIES[type];
-    const mul = def.boss ? 1 : 1 + 0.4 * (g.floor - 1);
+    const D = G.diff(), mul = def.boss ? D.boss : (1 + 0.4 * (g.floor - 1)) * D.hp;
     const e = {
       id: nextId++, type, def, x, y, r: def.r, hp: def.hp * mul, maxhp: def.hp * mul,
       t: 0.6 + Math.random() * 1.2, state: null, face: 0, age: Math.random() * 10, flash: 0,

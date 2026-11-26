@@ -222,6 +222,7 @@
     if (room.gentle) { budget -= room.gentle === 1 ? 4 : 2; pool = ['lunger', 'lunger', 'mite', 'fuse', 'wick']; }
     else if (floor === 1 && room.ramp != null) budget = Math.min(budget, 7 + room.ramp * 1.5 + (room.wave - 1) * 2);
     if (room.elite) budget += 3;
+    budget = Math.max(3, budget + G.diff().budget);
     let guard = 0, elite = room.elite && room.wave === room.waves;
     while (budget > 0 && guard++ < 60) {
       const type = G.pick(pool), def = G.ENEMIES[type];

@@ -155,7 +155,7 @@
     if (g.back === 'menu') G.drawMenuBackdrop(ctx);
     ctx.fillStyle = 'rgba(7,4,9,0.8)'; ctx.fillRect(0, 0, G.W, G.H);
     U.panel(ctx, x0, 40, w, 520, '#ff9d4a', 0.92);
-    U.glowText(ctx, '剧 情', G.W / 2, 78, 34, '#ffe9c8', '#ff9d4a', true);
+    U.glowText(ctx, '剧情', G.W / 2, 78, 32, '#ffe9c8', '#ff9d4a', true);
     U.divider(ctx, G.W / 2, 106, 120, '#ff9d4a');
     G.STORY_ORDER.forEach((id, i) => {
       const ch = G.STORY[id], on = !!mem.r[id], y = 126 + i * 86;

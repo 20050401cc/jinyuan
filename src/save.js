@@ -31,7 +31,7 @@
     const g = G.game, p = g.player, d = g.dungeon, doors = [];
     for (let i = 0; i < d.owner.length; i++) if (d.owner[i] >= 0) doors.push(i, d.owner[i]);
     const data = {
-      v: 1, sv: 2, floor: g.floor, runTime: g.runTime, kills: g.kills, goldTotal: g.goldTotal, dmgTaken: g.dmgTaken, dmgDealt: g.dmgDealt,
+      v: 1, sv: 2, diff: g.diff, floor: g.floor, runTime: g.runTime, kills: g.kills, goldTotal: g.goldTotal, dmgTaken: g.dmgTaken, dmgDealt: g.dmgDealt,
       perks: g.perksTaken.map(k => k.id),
       player: { x: p.x, y: p.y, hp: p.hp, maxHp: p.maxHp, shield: p.shield, maxShield: p.maxShield, energy: p.energy, maxEnergy: p.maxEnergy, gold: p.gold, weapons: p.weapons, cur: p.cur, stats: p.stats },
       dungeon: { w: d.w, h: d.h, tiles: packTiles(d.tiles), doors },
@@ -40,7 +40,7 @@
       pickups: g.pickups.map(k => ({ kind: k.kind, x: k.x, y: k.y, val: k.val }))
     };
     if (!set(KEY_RUN, JSON.stringify(data))) return false;
-    S.meta = { floor: g.floor, kills: g.kills };
+    S.meta = { floor: g.floor, kills: g.kills, diff: g.diff };
     return true;
   };
 
@@ -69,7 +69,8 @@
       if (!d.boss || !rooms.length) throw new Error('bad dungeon');
 
       g.player = p;
-      g.floor = data.floor; g.dmgMul = 1 + 0.2 * (data.floor - 1);
+      g.diff = G.DIFFS[data.diff] ? data.diff : 'hard';
+      g.floor = data.floor; g.dmgMul = (1 + 0.2 * (data.floor - 1)) * G.diff().dmg;
       g.runTime = data.runTime || 0; g.kills = data.kills || 0; g.goldTotal = data.goldTotal || 0; g.dmgTaken = data.dmgTaken || 0; g.dmgDealt = data.dmgDealt || 0;
       g.perksTaken = (data.perks || []).map(perkOf).filter(Boolean); g.perkChoices = [];
       g.enemies.length = g.bullets.length = g.ebullets.length = 0;
