@@ -3,7 +3,7 @@
 (function () {
   const G = window.G;
   const KEY = 'jinyuan.settings.v1';
-  G.VERSION = '1.2.0';
+  G.VERSION = '1.3.0';
   G.desktop = window.jinyuanDesktop || null; // 桌面版（Electron）注入的接口
 
   const DEF = {
@@ -105,8 +105,8 @@
     U.glowText(ctx, '设 置', G.W / 2, 54, 34, '#ffe9c8', '#ff9d4a', true);
     U.divider(ctx, G.W / 2, 80, 120, '#ff9d4a');
     ROWS.forEach((r, i) => {
-      const y = 92 + i * 34, it = G.uiItem(x0 + 24, y, w - 48, 31, { lr: true, primary: i === 0 });
-      if (it.hover) { ctx.fillStyle = 'rgba(255,176,90,0.12)'; U.rr(ctx, x0 + 24, y, w - 48, 31, 6); ctx.fill(); ctx.strokeStyle = 'rgba(255,176,90,0.6)'; ctx.lineWidth = 1; ctx.stroke(); }
+      const y = 90 + i * 33, it = G.uiItem(x0 + 24, y, w - 48, 30, { lr: true, primary: i === 0 });
+      if (it.hover) { ctx.fillStyle = 'rgba(255,176,90,0.12)'; U.rr(ctx, x0 + 24, y, w - 48, 30, 6); ctx.fill(); ctx.strokeStyle = 'rgba(255,176,90,0.6)'; ctx.lineWidth = 1; ctx.stroke(); }
       G.text(ctx, r.label, x0 + 44, y + 16, 15, it.hover ? '#fff' : '#d8ccd4', 'left', true, false, 240);
       const vx = x0 + w - 150;
       G.text(ctx, '◀', vx - 92, y + 16, 13, it.hover ? '#ffb05a' : '#6a6070', 'center');
@@ -120,7 +120,7 @@
       const d = it.lr || (it.click ? (G.nav.active ? 1 : I.mx < vx ? -1 : 1) : 0);
       if (d) { r.step(d); store(); }
     });
-    const by = 504;
+    const by = 508;
     if (G.button(ctx, G.W / 2 - 230, by, 200, 44, '恢复默认')) {
       const keep = { lang: S.lang, inputMode: S.inputMode, fullscreen: S.fullscreen };
       Object.assign(S, DEF, keep); G.applySettings(); G.fit(); store();

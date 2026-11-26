@@ -23,8 +23,11 @@
     const start = e => {
       e.preventDefault();
       G.audio.unlock();
+      if (G.nav) G.nav.active = false;
       for (const t of e.changedTouches) {
         const p = pos(t), g = G.game;
+        if (g.state === 'play' && g.bigMap) { if (!G.mapTeleport(p.x, p.y)) g.bigMap = false; continue; }
+        if (g.state === 'play' && T.on && p.x > G.W - 170 && p.y < 128 && !inBtn(BTN.pause, p.x, p.y)) { g.bigMap = true; G.sfx('ui'); continue; }
         if (g.state !== 'play') { I.mx = p.x; I.my = p.y; I.clicked = true; continue; }
         // 选了电脑端却在触屏上玩：把触摸当作鼠标
         if (!T.on) { I.mx = p.x; I.my = p.y; I.down = true; continue; }
@@ -116,9 +119,15 @@
   };
 
   // 竖屏提示
-  G.drawRotateHint = function (ctx) {
-    if (window.innerHeight <= window.innerWidth || !(T.on || navigator.maxTouchPoints > 0 || window.innerWidth < 600)) return;
-    ctx.fillStyle = 'rgba(7,4,9,0.86)'; ctx.fillRect(0, 0, G.W, G.H);
-    G.text(ctx, '请将设备横过来游玩', G.W / 2, G.H / 2, 40, '#ffe9c8', 'center', true, false, G.W - 60);
+  let rotEl = null;
+  G.drawRotateHint = function () {
+    const show = window.innerHeight > window.innerWidth && (T.on || navigator.maxTouchPoints > 0 || window.innerWidth < 600);
+    if (!rotEl) {
+      rotEl = document.getElementById('rotate');
+      if (!rotEl) return;
+    }
+    const txt = G.tr('请将设备横过来游玩');
+    if (show !== (rotEl.style.display === 'flex')) rotEl.style.display = show ? 'flex' : 'none';
+    if (show && rotEl.firstChild.textContent !== txt) rotEl.firstChild.textContent = txt;
   };
 })();

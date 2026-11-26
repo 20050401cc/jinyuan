@@ -154,34 +154,47 @@
   };
 
   // 命中触发的增益效果（燃烧、减速、电弧）；持续伤害与电弧本身不再触发，避免连锁失控
-  let noProc = false;
-  function procs(e, dmg) {
-    const s = G.game.player.stats;
-    if (s.burn) { e.burnT = 3; e.burnLv = s.burn; }
-    if (s.frost) e.slowT = 1.6;
-    if (s.chain && Math.random() < s.chain) {
+  let depth = 0;
+  function procs(e, dmg, fx) {
+    const s = G.game.player.stats, k = fx && fx.proc != null ? fx.proc : 1, boss = e.def.boss;
+    if (!e.dead) {
+      const lv = Math.max(s.burn, fx && fx.ignite || 0);
+      if (lv) { e.burnT = 3; e.burnLv = Math.max(e.burnLv || 0, lv); }
+      // 寒霜：守护者只受短时、较弱的减速
+      if (fx && fx.freeze) { e.slowT = boss ? 1 : 2.5; e.slowK = boss ? 0.7 : 0.3; }
+      else if (s.frost) { e.slowT = boss ? 0.8 : 1.6; e.slowK = boss ? 0.85 : 0.6; }
+    }
+    // 电弧几率按武器的触发系数折算，避免高频武器过强
+    if (s.chain && Math.random() < s.chain * k) {
       const pts = [e.x, e.y];
       const near = G.game.enemies.filter(o => o !== e && !o.dead && o.spawnT <= 0 && Math.hypot(o.x - e.x, o.y - e.y) < 190)
         .sort((a, b) => Math.hypot(a.x - e.x, a.y - e.y) - Math.hypot(b.x - e.x, b.y - e.y)).slice(0, 3);
-      noProc = true;
+      depth++;
       for (const o of near) { pts.push(o.x, o.y); G.hurtEnemy(o, dmg * 0.5, false, 0, 0); }
-      noProc = false;
+      depth--;
       if (near.length) G.game.effects.push({ type: 'bolt', pts, t: 0, dur: 0.2, color: '#9ad8ff' });
     }
   }
-  G.hurtEnemyDot = function (e, dmg) { noProc = true; G.hurtEnemy(e, dmg, false, 0, 0); noProc = false; };
+  // 持续伤害、电弧、爆裂等派生伤害不再触发命中效果
+  G.hurtEnemyDot = function (e, dmg) { depth++; G.hurtEnemy(e, dmg, false, 0, 0); depth--; };
+  // 天罚棱镜：折射到附近两个敌人
+  G.refract = function (e, dmg) {
+    const g = G.game, near = g.enemies.filter(o => o !== e && !o.dead && o.spawnT <= 0 && Math.hypot(o.x - e.x, o.y - e.y) < 170).slice(0, 2);
+    for (const o of near) G.hurtEnemyDot(o, dmg);
+    if (near.length && Math.random() < 0.35) g.effects.push({ type: 'bolt', pts: [e.x, e.y].concat(...near.map(o => [o.x, o.y])), t: 0, dur: 0.12, color: '#e8f8ff' });
+  };
 
-  G.hurtEnemy = function (e, dmg, crit, kx, ky) {
+  G.hurtEnemy = function (e, dmg, crit, kx, ky, fx) {
     if (e.dead || e.spawnT > 0) return;
     const g = G.game;
     if (g.player.stats.frost && e.slowT > 0) dmg *= 1.2;
-    if (!noProc) procs(e, dmg);
     e.hp -= dmg; e.flash = 0.09;
     if (!e.def.boss) { e.kx += kx || 0; e.ky += ky || 0; }
     g.dmgDealt += dmg;
     if (G.settings.dmgNum && (dmg >= 3 || Math.random() < 0.3)) G.floatText(e.x, e.y - e.r - 4, String(Math.max(1, Math.round(dmg))), crit ? '#ffe14a' : '#fff', crit ? 16 : 12);
     G.sfx('hit');
     if (e.hp <= 0) { e.dead = true; G.onEnemyDeath(e); }
+    if (depth === 0) procs(e, dmg, fx);
   };
 
   G.onEnemyDeath = function (e) {
@@ -202,14 +215,19 @@
     // 被击杀的爆燃虫会炸伤周围的敌人
     if (e.type === 'fuse' && !e.selfBoom) G.explode(e.x, e.y, 60, 30, true, false);
     // 余烬爆裂：燃烧中死去的敌人爆炸并点燃周围
-    if (p.stats.burnBlast && e.burnT > 0) {
-      g.effects.push({ type: 'boom', x: e.x, y: e.y, rad: 70, t: 0, dur: 0.4, color: '#ff8a3a' });
-      for (const o of g.enemies) if (o !== e && !o.dead && Math.hypot(o.x - e.x, o.y - e.y) < 80) { o.burnT = 3; o.burnLv = p.stats.burn; G.hurtEnemyDot(o, 18 * p.stats.dmg); }
-    }
+    if (p.stats.burnBlast && e.burnT > 0) (g.blastQ || (g.blastQ = [])).push({ x: e.x, y: e.y, lv: Math.max(1, e.burnLv || p.stats.burn) });
   };
 
   G.updateEnemies = function (dt) {
     const g = G.game, p = g.player, list = g.enemies;
+    // 余烬爆裂队列：每帧结算上一帧排进来的爆炸，连锁爆炸会逐帧扩散，不会递归
+    if (g.blastQ && g.blastQ.length) {
+      const q = g.blastQ; g.blastQ = [];
+      for (const b of q) {
+        g.effects.push({ type: 'boom', x: b.x, y: b.y, rad: 70, t: 0, dur: 0.4, color: '#ff8a3a' });
+        for (const o of list) if (!o.dead && o.spawnT <= 0 && Math.hypot(o.x - b.x, o.y - b.y) < 80) { o.burnT = 3; o.burnLv = Math.max(o.burnLv || 0, b.lv); G.hurtEnemyDot(o, 18 * p.stats.dmg); }
+      }
+    }
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
       e.age += dt; e.flash -= dt;
@@ -227,7 +245,7 @@
         if (Math.abs(e.kx) + Math.abs(e.ky) < 4) e.kx = e.ky = 0;
       }
       const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
-      e.def.ai(e, e.slowT > 0 ? dt * (e.def.boss ? 0.85 : 0.6) : dt, g, p, d, Math.atan2(dy, dx));
+      e.def.ai(e, e.slowT > 0 ? dt * (e.slowK || 0.6) : dt, g, p, d, Math.atan2(dy, dx));
       if (!e.dead && e.def.touch && d < e.r + p.r - 2) G.hurtPlayer(e.def.touch * g.dmgMul);
     }
     // 互相推开，避免重叠成一团

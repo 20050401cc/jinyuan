@@ -53,7 +53,8 @@
         G.ach.ev('dash');
         for (let i = 0; i < 5; i++) g.effects.push({ type: 'dust', x: p.x + G.rand(-8, 8), y: p.y + 8 + G.rand(-4, 4), t: 0, dur: 0.4 });
       } else if (ml) {
-        const sp = 195 * s.speed;
+        // 没有战斗时走得快一些，减少空房间跑图
+        const sp = 195 * s.speed * (g.active || g.boss ? 1 : 1.25);
         G.moveEntity(p, mx * sp * dt, my * sp * dt);
         p.walk += dt * 13;
         p.stepT -= dt;
@@ -75,7 +76,7 @@
 
     // 最近的可互动物
     p.near = null;
-    let bd = 48;
+    let bd = 64;
     for (const it of g.items) {
       if (it.kind === 'chest' && it.opened) continue;
       const d = Math.hypot(it.x - p.x, it.y - p.y);

@@ -55,7 +55,7 @@
       unlock(n);
       if (g.dmgTaken === g.dmgAtBoss) unlock('untouched');
       const p = g.player;
-      if (p && p.weapons[p.cur] === 'blade') unlock('blade');
+      if (p && G.weaponShape(p.weapons[p.cur]) === 'blade') unlock('blade');
     } else if (type === 'win') {
       s.wins++; unlock('boss3');
       if (g.runTime < 15 * 60) unlock('speed');
@@ -64,7 +64,7 @@
     else if (type === 'chest') { s.chests++; if (s.chests >= 15) unlock('chests'); }
     else if (type === 'buy') { s.buys++; if (s.buys >= 10) unlock('shopper'); }
     else if (type === 'dash') { s.dashes++; if (s.dashes >= 300) unlock('dasher'); }
-    else if (type === 'weapon') { if (arg && s.weapons.indexOf(arg) < 0) { s.weapons.push(arg); if (s.weapons.length >= G.WEAPON_IDS.length) unlock('arsenal'); } }
+    else if (type === 'weapon') { if (arg && !G.WEAPONS[arg].evo && s.weapons.indexOf(arg) < 0) { s.weapons.push(arg); if (s.weapons.length >= G.WEAPON_IDS.length) unlock('arsenal'); } }
     else if (type === 'perk') { if (g.perksTaken.length >= 5) unlock('perks'); }
     A.dirty = true;
   };
@@ -100,6 +100,10 @@
     G.text(ctx, on ? a.glyph : '?', x, y + 1, r * 0.85, on ? a.color : '#4a444e', 'center', true);
   }
 
+  const PROG = {
+    slayer: () => [A.stats.kills, 300], chests: () => [A.stats.chests, 15], shopper: () => [A.stats.buys, 10],
+    dasher: () => [A.stats.dashes, 300], veteran: () => [A.stats.wins, 3], arsenal: () => [A.stats.weapons.length, G.WEAPON_IDS.length]
+  };
   // 成就一览界面
   G.drawAchievements = function (ctx) {
     const g = G.game, U = G.ui;
@@ -115,9 +119,15 @@
       const col = i % 2, row = Math.floor(i / 2), x = x0 + 24 + col * 412, y = 120 + row * 50, on = !!A.unlocked[a.id];
       ctx.fillStyle = on ? 'rgba(255,176,90,0.07)' : 'rgba(255,255,255,0.025)'; U.rr(ctx, x, y, 400, 44, 6); ctx.fill();
       badge(ctx, x + 24, y + 22, 16, a, on);
-      G.text(ctx, a.name, x + 50, y + 14, 14, on ? '#fff' : '#8a8088', 'left', true, false, 320);
-      G.text(ctx, a.desc, x + 50, y + 32, 11, on ? '#c8bcc0' : '#6a6470', 'left', false, false, 320);
+      G.text(ctx, a.name, x + 50, y + 14, 14, on ? '#fff' : '#8a8088', 'left', true, false, PROG[a.id] && !on ? 262 : 320);
+      G.text(ctx, a.desc, x + 50, y + 32, 11, on ? '#c8bcc0' : '#6a6470', 'left', false, false, PROG[a.id] && !on ? 262 : 320);
       if (on) G.text(ctx, '✓', x + 382, y + 22, 16, a.color, 'center', true);
+      else if (PROG[a.id]) {
+        const [v, n] = PROG[a.id](), f = Math.min(1, v / n);
+        G.text(ctx, Math.min(v, n) + ' / ' + n, x + 388, y + 14, 11, '#a89ea8', 'right');
+        ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(x + 318, y + 30, 70, 3);
+        ctx.fillStyle = a.color; ctx.fillRect(x + 318, y + 30, 70 * f, 3);
+      }
     });
     if (G.button(ctx, G.W / 2 - 100, 524, 200, 42, '返回', true)) G.closeSub();
   };

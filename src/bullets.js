@@ -9,7 +9,7 @@
     const b = {
       x: o.x, y: o.y, vx: o.vx, vy: o.vy, r: o.r || 4, dmg: o.dmg || 1, crit: !!o.crit,
       life: o.life || 1.5, color: o.color || '#fff', bounce: o.bounce || 0, pierce: o.pierce || 0,
-      homing: o.homing || 0, explode: o.explode || 0, lastHit: null
+      homing: o.homing || 0, explode: o.explode || 0, lastHit: null, fx: o.fx || null
     };
     if (o.friendly) g.bullets.push(b);
     else if (g.ebullets.length < MAX_EB) g.ebullets.push(b);
@@ -74,7 +74,7 @@
             const dx = e.x - b.x, dy = e.y - b.y, rr = e.r + b.r;
             if (dx * dx + dy * dy < rr * rr) {
               if (b.explode) { dead = true; break; }
-              G.hurtEnemy(e, b.dmg, b.crit, b.vx * 0.25, b.vy * 0.25);
+              G.hurtEnemy(e, b.dmg, b.crit, b.vx * 0.25, b.vy * 0.25, b.fx);
               b.lastHit = e;
               if (b.pierce > 0) b.pierce--; else { dead = true; break; }
             }
@@ -88,7 +88,7 @@
         }
       }
       if (dead) {
-        if (b.explode) G.explode(b.x, b.y, b.explode, b.dmg, friendly, b.crit);
+        if (b.explode) G.explode(b.x, b.y, b.explode, b.dmg, friendly, b.crit, b.fx);
         else G.burst(b.x, b.y, b.color, 3, 70, 0.2, 2);
         list[i] = list[list.length - 1];
         list.pop();
@@ -100,7 +100,7 @@
     stepList(G.game.ebullets, dt, false);
   };
 
-  G.explode = function (x, y, rad, dmg, friendly, crit) {
+  G.explode = function (x, y, rad, dmg, friendly, crit, fx) {
     const g = G.game, p = g.player;
     g.effects.push({ type: 'boom', x, y, rad, t: 0, dur: 0.32, color: friendly ? '#ffc56b' : '#ff6a4a' });
     G.burst(x, y, friendly ? '#ffd58a' : '#ff8a5a', 14, 220, 0.45, 3);
@@ -113,7 +113,7 @@
       for (const e of g.enemies.slice()) {
         if (e.spawnT > 0 || e.dead) continue;
         const d = Math.hypot(e.x - x, e.y - y);
-        if (d < rad + e.r) G.hurtEnemy(e, dmg, crit, (e.x - x) / (d || 1) * 160, (e.y - y) / (d || 1) * 160);
+        if (d < rad + e.r) G.hurtEnemy(e, dmg, crit, (e.x - x) / (d || 1) * 160, (e.y - y) / (d || 1) * 160, fx);
       }
     } else if (Math.hypot(p.x - x, p.y - y) < rad + p.r) G.hurtPlayer(dmg);
   };

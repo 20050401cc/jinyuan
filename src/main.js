@@ -18,7 +18,7 @@
     g.enemies.length = g.bullets.length = g.ebullets.length = 0;
     g.pickups.length = g.items.length = g.particles.length = g.texts.length = g.effects.length = g.stains.length = 0;
     g.fade = 1;
-    g.active = null; g.boss = null; g.winT = -1; g.shake = 0; g.cine = null; g.bigMap = false; g.sub = null; g.slow = null; g.flash = 0; g.dying = 0;
+    g.active = null; g.boss = null; g.winT = -1; g.shake = 0; g.cine = null; g.bigMap = false; g.blastQ = []; g.sub = null; g.slow = null; g.flash = 0; g.dying = 0;
     g.dungeon = G.genDungeon(n);
     G.decorate(g.dungeon);
     const p = g.player, st = g.dungeon.start;
@@ -47,6 +47,8 @@
     g.state = 'play'; g.stateT = 0;
     G.input.down = false;
     G.transIn(0.5);
+    // 启程之礼：开局先选一项增益，尽早确立流派
+    G.openPerkChoice('start');
   }
 
   // 倒下时先慢动作 1.3 秒，再进入结算
@@ -111,7 +113,7 @@
     G.updateTouch();
     g.time += dt; g.stateT += dt;
     if (g.dungeon) G.prebake(g.dungeon);
-    if (g.fade > 0 && g.state !== 'perk') g.fade = Math.max(0, g.fade - dt * 1.6);
+    if (g.fade > 0 && (g.state !== 'perk' || g.perkMode === 'start')) g.fade = Math.max(0, g.fade - dt * 1.6);
     if (I.pressed.KeyM) G.toggleMute();
     if (g.toast) { g.toast.t -= dt; if (g.toast.t <= 0) g.toast = null; }
     if (I.pressed.F3) { G.settings.fps = G.debug.fps = !G.debug.fps; G.saveSettings(); }
@@ -222,8 +224,16 @@
       let dt = (ts - last) / 1000;
       last = ts;
       if (dt > 0) G.fps = G.fps * 0.92 + (1 / dt) * 0.08;
-      if (dt > 0.05) dt = 0.05;
-      if (!G.debug.manual) G.tick(dt);
+      // 低帧率时拆成最多 3 个小步更新，游戏速度不会跟着变慢；只画一次
+      dt = Math.min(dt, 0.15);
+      if (!G.debug.manual) {
+        const n = Math.max(1, Math.ceil(dt / 0.05)), sdt = dt / n, I = G.input;
+        for (let i = 0; i < n; i++) {
+          G.frameDt = sdt; G.update(sdt);
+          if (i < n - 1) { I.pressed = {}; I.clicked = false; I.wheel = 0; G.navEndFrame(); }
+        }
+        G.frameDt = dt; G.draw(); G.navEndFrame(); G.endFrameInput();
+      }
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);

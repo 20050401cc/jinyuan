@@ -200,6 +200,7 @@
     for (const b of g.bullets) G.glow(ctx, b.color, b.x, b.y, b.r * 4.2, 0.6);
     for (const e of g.enemies) {
       if (e.def.boss && e.spawnT <= 0) G.glow(ctx, e.def.color, e.x, e.y, e.r * 3 + Math.sin(g.time * 5) * 6, 0.28);
+      if (e.elite) G.glow(ctx, '#ffd24a', e.x, e.y, e.r * 2.6 + Math.sin(g.time * 6) * 4, 0.45);
       if (e.burnT > 0) G.glow(ctx, '#ff7a2a', e.x, e.y, e.r * 2.4 + Math.sin(g.time * 18 + e.id) * 3, 0.7);
       if (e.slowT > 0) G.glow(ctx, '#9ad8ff', e.x, e.y, e.r * 2.2, 0.55);
     }
@@ -348,7 +349,7 @@
     drawEnemyOverlays(ctx, g);
     drawBullets(ctx, g);
     drawFx(ctx, g);
-    for (const it of g.items) if (it.price) G.textO(ctx, String(it.price), it.x + 5, it.y + 33, 12, p.gold >= it.price ? '#ffd86b' : '#b07a66', 'center');
+    for (const it of g.items) if (it.price) G.textO(ctx, String(it.price), it.x + 5, it.y + 33, 12, p.gold >= it.price ? '#ffd86b' : '#ff5d6c', 'center');
     ctx.restore();
 
     G.drawMotes(ctx, g, th);

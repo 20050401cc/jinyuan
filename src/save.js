@@ -31,7 +31,7 @@
     const g = G.game, p = g.player, d = g.dungeon, doors = [];
     for (let i = 0; i < d.owner.length; i++) if (d.owner[i] >= 0) doors.push(i, d.owner[i]);
     const data = {
-      v: 1, floor: g.floor, runTime: g.runTime, kills: g.kills, goldTotal: g.goldTotal, dmgTaken: g.dmgTaken, dmgDealt: g.dmgDealt,
+      v: 1, sv: 2, floor: g.floor, runTime: g.runTime, kills: g.kills, goldTotal: g.goldTotal, dmgTaken: g.dmgTaken, dmgDealt: g.dmgDealt,
       perks: g.perksTaken.map(k => k.id),
       player: { x: p.x, y: p.y, hp: p.hp, maxHp: p.maxHp, shield: p.shield, maxShield: p.maxShield, energy: p.energy, maxEnergy: p.maxEnergy, gold: p.gold, weapons: p.weapons, cur: p.cur, stats: p.stats },
       dungeon: { w: d.w, h: d.h, tiles: packTiles(d.tiles), doors },
@@ -59,6 +59,8 @@
       p.weapons = [G.WEAPONS[sp.weapons[0]] ? sp.weapons[0] : 'pistol', G.WEAPONS[sp.weapons[1]] ? sp.weapons[1] : null];
       if (!p.weapons[p.cur]) p.cur = 0;
       Object.assign(p.stats, sp.stats);
+      // 1.2.0 之前的分裂弹仓会把全局伤害乘 0.88，读旧档时还原
+      if (!data.sv) { const n = (data.perks || []).filter(id => id === 'multi').length; if (n) p.stats.dmg /= Math.pow(0.88, n); }
       const dd = data.dungeon, n = dd.w * dd.h;
       const tiles = unpackTiles(dd.tiles, n), owner = new Int16Array(n).fill(-1);
       for (let i = 0; i < dd.doors.length; i += 2) owner[dd.doors[i]] = dd.doors[i + 1];

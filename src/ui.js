@@ -101,7 +101,7 @@
         ctx.fillStyle = col; rr(ctx, x, y, w, h, 2); ctx.fill(); ctx.globalAlpha = 1;
       } else {
         ctx.fillStyle = 'rgba(0,0,0,0.55)'; rr(ctx, x, y, w, h, 2); ctx.fill();
-        ctx.strokeStyle = r.type === 'boss' ? col : 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.strokeStyle = r.type === 'boss' ? col : r.elite ? '#ffd24a' : 'rgba(255,255,255,0.4)'; ctx.lineWidth = r.elite ? 1.6 : 1; ctx.stroke();
         if (r.type === 'boss') { const q = 3.5 * k; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(cx(r), cy(r) - q); ctx.lineTo(cx(r) + q, cy(r)); ctx.lineTo(cx(r), cy(r) + q); ctx.lineTo(cx(r) - q, cy(r)); ctx.fill(); }
       }
       if (r === g.room) {
@@ -127,7 +127,7 @@
       ctx.fillStyle = ROOM_COLOR[t]; rr(ctx, lx, y + h - 40, 12, 12, 2); ctx.fill();
       text(ctx, s, lx + 18, y + h - 33.5, 12, '#c8bcc0', 'left', false, false, 62); lx += 92;
     }
-    text(ctx, G.touch.on ? '轻触关闭' : 'Tab / 点击关闭', G.W / 2, y + h - 12, 11, '#8a8088', 'center');
+    text(ctx, (G.touch.on ? G.tr('轻触关闭') : G.tr('Tab / 点击关闭')) + ' · ' + G.tr('点击已探索的房间可传送'), G.W / 2, y + h - 12, 11, '#8a8088', 'center', false, false, w - 30);
   }
 
   // 桌面端右上角小按钮：展开地图、静音、暂停
@@ -159,7 +159,7 @@
   G.hudClick = function (x, y) {
     const g = G.game;
     if (g.state !== 'play' || G.touch.on || g.cine || g.dying) return false;
-    if (g.bigMap) { g.bigMap = false; return true; }
+    if (g.bigMap) { if (!G.mapTeleport(x, y)) g.bigMap = false; return true; }
     for (const b of hudBtns()) {
       if (x < b.x || x > b.x + b.s || y < b.y || y > b.y + b.s) continue;
       if (b.id === 'pause') G.input.pressed.Escape = true;
@@ -170,20 +170,38 @@
     }
     const N = G.GRID_N, ox = G.W - 18 - N * 27 - 9;
     if (x >= ox && y <= 18 + N * 19 + 9) { g.bigMap = true; G.sfx('ui'); return true; }
+    const p = g.player;
+    if (x > G.W - 214 && y > G.H - 124) { if (p.weapons[1]) { p.cur = y > G.H - 66 ? 1 : 0; G.sfx('ui'); } return true; }
+    if ((x < 278 && y > G.H - 102) || (x < 330 && x > 282 && y > G.H - 70) || (x < 222 && y < 72)) return true;
     return false;
+  };
+  // 展开地图中点击房间：脱战时传送到已探索且安全的房间
+  G.mapTeleport = function (x, y) {
+    const g = G.game, N = G.GRID_N, k = 3.2, cw = 27 * k, ch = 19 * k, w = N * cw + 60, h = N * ch + 120;
+    const ox = (G.W - w) / 2 + 30, oy = (G.H - h) / 2 + 48;
+    const r = g.dungeon.rooms.find(o => x >= ox + o.gx * cw && x < ox + (o.gx + 1) * cw && y >= oy + o.gy * ch && y < oy + (o.gy + 1) * ch);
+    if (!r) return false;
+    if (g.active || g.boss) { g.toast = { text: '战斗中无法传送', t: 1.4 }; return true; }
+    if (!r.visited || (r.type !== 'start' && r.type !== 'chest' && r.type !== 'shop' && !r.cleared)) { g.toast = { text: '只能传送到已探索的安全房间', t: 1.4 }; return true; }
+    const p = g.player;
+    G.burst(p.x, p.y, '#3ff0da', 16, 200, 0.4, 3);
+    p.x = r.cx; p.y = r.cy + 30; g.room = r; g.bigMap = false;
+    g.cam.x = p.x - G.W / 2; g.cam.y = p.y - G.H / 2; G.prebakeNear(g.dungeon, p.x, p.y);
+    G.burst(p.x, p.y, '#3ff0da', 22, 220, 0.5, 3); g.effects.push({ type: 'ring', x: p.x, y: p.y, rad: 70, t: 0, dur: 0.45, color: '#3ff0da' });
+    G.sfx('portal');
+    return true;
   };
   G.toggleMute = function () {
     G.audio.muted = !G.audio.muted;
     if (G.game.state === 'play') G.game.toast = { text: G.audio.muted ? '已静音（M 恢复）' : '声音已开启', t: 1.6 };
   };
   // 武器对比：拾取或购买前显示和将被替换的武器的差别
-  const dps = id => { const w = G.WEAPONS[id]; return w.dmg * (w.count || 1) / w.cd; };
   function weaponCompare(p, id) {
-    const s = p.stats, now = p.weapons[1] ? p.weapons[p.cur] : null, k = s.dmg * s.rate;
-    const a = Math.round(dps(id) * k), cost = w => Math.round(G.WEAPONS[w].cost * s.costMul * 10) / 10;
-    if (!now) return { text: G.tf('DPS {0} · 耗能 {1} · 放入空槽', a, cost(id)), better: true };
-    const b = Math.round(dps(now) * k);
-    return { text: G.tf('替换 {0}：DPS {1} → {2} · 耗能 {3} → {4}', G.tr(G.WEAPONS[now].name), b, a, cost(now), cost(id)), better: a >= b };
+    const now = p.weapons[1] ? p.weapons[p.cur] : null, a = G.weaponStats(p, id);
+    if (!now) return { text: G.tf('DPS {0} · 每秒耗能 {1} · 放入空槽', a.dps, a.eps), color: '#9dff8a' };
+    const b = G.weaponStats(p, now);
+    const up = a.dps >= b.dps, cheap = a.eps <= b.eps;
+    return { text: G.tf('替换 {0}：DPS {1} → {2} · 每秒耗能 {3} → {4}', G.tr(G.WEAPONS[now].name), b.dps, a.dps, b.eps, a.eps), color: up && cheap ? '#9dff8a' : !up && !cheap ? '#ffb0a0' : '#ffe27a', swap: true };
   }
 
   function divider(ctx, x, y, w, color) {
@@ -282,9 +300,13 @@
       ctx.fillStyle = '#f7a653'; rr(ctx, x + 9, y + 7, 22, 20, 4); ctx.fill();
       text(ctx, G.keyName('use'), x + 20, y + 17.5, 13, '#2a1204', 'center', true);
       text(ctx, label, x + 40, y + 17.5, 14, '#ffeccc', 'left', true);
-      const sub = p.near.kind === 'weapon' ? G.WEAPONS[p.near.wid].desc : p.near.item === 'perk' ? p.near.perk.desc : '';
+      const sub = p.near.kind === 'weapon' ? G.WEAPONS[p.near.wid].desc : p.near.item === 'perk' ? p.near.perk.desc : p.near.item === 'heal' ? '回复 40 点生命' : p.near.item === 'energy' ? '能量回满' : '';
       if (sub) G.textO(ctx, sub, G.W / 2, y + 48, 12, '#d8d0d8', 'center');
-      if (p.near.kind === 'weapon') { const c = weaponCompare(p, p.near.wid); G.textO(ctx, c.text, G.W / 2, y + 66, 12, c.better ? '#9dff8a' : '#ffb0a0', 'center'); }
+      if (p.near.kind === 'weapon') {
+        const c = weaponCompare(p, p.near.wid);
+        G.textO(ctx, c.text, G.W / 2, y + 66, 12, c.color, 'center');
+        if (c.swap) G.textO(ctx, G.tf('先按 {0} 切换要替换的武器', G.keyName('swap')), G.W / 2, y + 84, 11, '#bdb2bc', 'center');
+      }
     }
 
     // 横幅
@@ -489,8 +511,41 @@
     if (G.button(ctx, x, y, 220, h, '返回主菜单')) { G.save.write(); g.state = 'menu'; }
     y += 70;
     G.controlHints().forEach((h, i) => text(ctx, h, G.W / 2, y - 8 + i * 18, 12, '#a89ea8', 'center', false, false, 350));
-    if (g.perksTaken.length) perkRow(ctx, g, T ? 540 : 500);
+    buildPanels(ctx, g);
   };
+  function buildPanels(ctx, g) {
+    const w = G.W / 2 - 214, p = g.player;
+    if (w < 200) { if (g.perksTaken.length) perkRow(ctx, g, 520); return; }
+    const has = id => g.perksTaken.some(k => k.id === id);
+    // 左：进化配方
+    panel(ctx, 14, 60, w, 300, '#ffb05a', 0.86);
+    text(ctx, '武器进化', 30, 84, 15, '#ffe9c8', 'left', true);
+    G.EVOLUTIONS.forEach((e, i) => {
+      const y = 118 + i * 60, to = G.WEAPONS[e.to], own = p.weapons.indexOf(e.from) >= 0 || p.weapons.indexOf(e.to) >= 0, done = p.weapons.indexOf(e.to) >= 0;
+      text(ctx, to.name, 30, y, 13, done ? to.color : '#e8dcd0', 'left', true, false, w - 40);
+      const parts = [[G.WEAPONS[e.from].name, own]].concat(e.perks.map(id => [G.PERKS.find(k => k.id === id).name, has(id)]));
+      let x = 30;
+      ctx.font = '11px ' + G.FONT;
+      for (const [nm, ok] of parts) {
+        const s = (ok ? '✓ ' : '· ') + G.tr(nm);
+        text(ctx, s, x, y + 20, 11, ok ? '#9dff8a' : '#8a8088', 'left');
+        x += ctx.measureText(s).width + 12;
+      }
+    });
+    text(ctx, '集齐后会在增益选择中出现', 30, 344, 11, '#8a8088', 'left', false, false, w - 40);
+    // 右：已获得的增益
+    const x0 = G.W / 2 + 200;
+    panel(ctx, x0, 60, w, 300, '#ff9d4a', 0.86);
+    text(ctx, G.tf('构筑 · {0} 项增益', g.perksTaken.length), x0 + 16, 84, 15, '#ffe9c8', 'left', true);
+    const counts = {};
+    for (const k of g.perksTaken) counts[k.id] = (counts[k.id] || 0) + 1;
+    Object.keys(counts).slice(0, 12).forEach((id, i) => {
+      const k = G.PERKS.find(o => o.id === id), y = 112 + i * 20;
+      text(ctx, k.glyph, x0 + 26, y, 13, k.color, 'center', true);
+      text(ctx, G.tr(k.name) + (counts[id] > 1 ? ' ×' + counts[id] : ''), x0 + 42, y, 12, '#e0d6d0', 'left', false, false, w - 56);
+    });
+    if (!g.perksTaken.length) text(ctx, '还没有获得增益', x0 + 16, 116, 12, '#8a8088', 'left');
+  }
   function perkRow(ctx, g, y) {
     const list = g.perksTaken, n = Math.min(list.length, 14), x0 = G.W / 2 - (n - 1) * 21;
     for (let i = 0; i < n; i++) {
@@ -505,9 +560,10 @@
   G.drawPerk = function (ctx) {
     const g = G.game, I = G.input;
     dim(ctx, 0.8);
-    glowText(ctx, G.tf('第 {0} 层 · 肃清', g.floor), G.W / 2, 78, 44, '#ffe9c8', '#ff9d4a', true);
+    const md = g.perkMode || 'floor';
+    glowText(ctx, md === 'start' ? '启程之礼' : md === 'elite' ? '精英战利品' : G.tf('第 {0} 层 · 肃清', g.floor), G.W / 2, 78, 44, '#ffe9c8', '#ff9d4a', true);
     divider(ctx, G.W / 2, 112, 170, '#ff9d4a');
-    text(ctx, '选择一项增益，然后前往下一层', G.W / 2, 136, 14, '#c8bcc0', 'center');
+    text(ctx, md === 'start' ? '选择一项增益，作为这次远征的起点' : md === 'elite' ? '击败了精英，选择一项增益' : '选择一项增益，然后前往下一层', G.W / 2, 136, 14, '#c8bcc0', 'center');
     const cw = 236, chh = 300, gap = 28, x0 = (G.W - cw * 3 - gap * 2) / 2, y = 172;
     g.perkChoices.forEach((k, i) => {
       const x = x0 + i * (cw + gap);
@@ -533,7 +589,8 @@
       ctx.restore();
       text(ctx, k.glyph, x + cw / 2, yy + 94, 44, k.color, 'center', true, true);
       text(ctx, k.name, x + cw / 2, yy + 176, 23, '#fff', 'center', true, false, cw - 24);
-      if (k.tag) { ctx.font = 'bold 11px ' + G.FONT; const tw = ctx.measureText(G.tr('机制')).width + 16; ctx.fillStyle = G.rgba(k.color, 0.2); rr(ctx, x + cw / 2 - tw / 2, yy + 14, tw, 20, 10); ctx.fill(); ctx.strokeStyle = k.color; ctx.lineWidth = 1; ctx.stroke(); text(ctx, '机制', x + cw / 2, yy + 24.5, 11, k.color, 'center', true); }
+      if (k.tag) { const tg = k.tag === 2 ? '进化' : '机制'; ctx.font = 'bold 11px ' + G.FONT; const tw = ctx.measureText(G.tr(tg)).width + 16; ctx.fillStyle = G.rgba(k.color, 0.2); rr(ctx, x + cw / 2 - tw / 2, yy + 14, tw, 20, 10); ctx.fill(); ctx.strokeStyle = k.color; ctx.lineWidth = 1; ctx.stroke(); text(ctx, tg, x + cw / 2, yy + 24.5, 11, k.color, 'center', true); }
+      if (k.evo) text(ctx, G.tf('{0} → {1}', G.tr(G.WEAPONS[k.evo.from].name), G.tr(k.name)), x + cw / 2, yy + 150, 11, '#ffe9c8', 'center', false, false, cw - 30);
       divider(ctx, x + cw / 2, yy + 198, 56, k.color);
       ctx.font = '14px ' + G.FONT;
       const many = G.wrapLines(ctx, k.desc, cw - 44).length > 2;

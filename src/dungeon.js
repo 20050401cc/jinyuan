@@ -72,6 +72,9 @@
     const cand = G.shuffle(rooms.filter(r => r.type === 'combat')).sort((a, b) => a.links.length - b.links.length);
     if (cand[0]) cand[0].type = 'chest';
     if (cand[1]) cand[1].type = 'shop';
+    // 一间离起点较远的战斗房作为精英房（清完给一次增益三选一）
+    const far = rooms.filter(r => r.type === 'combat').sort((a, b) => (Math.abs(b.gx - rooms[0].gx) + Math.abs(b.gy - rooms[0].gy)) - (Math.abs(a.gx - rooms[0].gx) + Math.abs(a.gy - rooms[0].gy)));
+    if (far[0]) far[0].elite = true;
 
     // 5. 确定尺寸并铺地板
     for (const r of rooms) {
@@ -81,7 +84,7 @@
       r.ctx = r.gx * CW + 14; r.cty = r.gy * CH + 11;
       r.x = r.ctx - (r.w - 1) / 2; r.y = r.cty - (r.h - 1) / 2;
       r.cx = (r.ctx + 0.5) * G.TILE; r.cy = (r.cty + 0.5) * G.TILE;
-      if (r.type === 'combat') r.waves = Math.random() < 0.35 + floor * 0.15 ? 2 : 1;
+      if (r.type === 'combat') r.waves = r.elite ? 2 : Math.random() < 0.35 + floor * 0.15 ? 2 : 1;
       if (r.type === 'start') { r.cleared = true; }
       for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) tiles[y * w + x] = T.FLOOR;
     }
@@ -165,10 +168,20 @@
     return false;
   };
   // 分轴移动，返回是否撞墙
+  function slide(e, ax, d) {
+    // 沿另一轴试探 2~10 像素，若能让这一步走通，就朝空隙挪一点
+    for (let k = 2; k <= 10; k += 2) for (const sg of [1, -1]) {
+      const ox = ax === 'x' ? 0 : sg * k, oy = ax === 'x' ? sg * k : 0;
+      if (!G.collides(e.x + ox + (ax === 'x' ? d : 0), e.y + oy + (ax === 'y' ? d : 0), e.r) && !G.collides(e.x + Math.sign(ox) * 1.5, e.y + Math.sign(oy) * 1.5, e.r)) {
+        e.x += Math.sign(ox) * Math.min(k, 1.5 + Math.abs(d) * 0.6); e.y += Math.sign(oy) * Math.min(k, 1.5 + Math.abs(d) * 0.6); return;
+      }
+    }
+  }
   G.moveEntity = function (e, dx, dy) {
     let hit = false;
-    if (dx) { e.x += dx; if (G.collides(e.x, e.y, e.r)) { e.x -= dx; hit = true; } }
-    if (dy) { e.y += dy; if (G.collides(e.x, e.y, e.r)) { e.y -= dy; hit = true; } }
+    const pl = e === G.game.player;
+    if (dx) { e.x += dx; if (G.collides(e.x, e.y, e.r)) { e.x -= dx; hit = true; if (pl && !dy) slide(e, 'x', dx); } }
+    if (dy) { e.y += dy; if (G.collides(e.x, e.y, e.r)) { e.y -= dy; hit = true; if (pl && !dx) slide(e, 'y', dy); } }
     return hit;
   };
   G.raycast = function (x, y, ang, max) {
@@ -207,7 +220,9 @@
     let budget = 6 + floor * 3 + G.randi(0, 3) + (room.wave - 1) * 2;
     let pool = POOLS[Math.min(floor, 3) - 1];
     if (room.gentle) { budget -= room.gentle === 1 ? 4 : 2; pool = ['lunger', 'lunger', 'mite', 'fuse', 'wick']; }
-    let guard = 0;
+    else if (floor === 1 && room.ramp != null) budget = Math.min(budget, 7 + room.ramp * 1.5 + (room.wave - 1) * 2);
+    if (room.elite) budget += 3;
+    let guard = 0, elite = room.elite && room.wave === room.waves;
     while (budget > 0 && guard++ < 60) {
       const type = G.pick(pool), def = G.ENEMIES[type];
       if (def.cost > budget) continue;
@@ -215,7 +230,9 @@
       budget -= def.cost * cnt;
       for (let i = 0; i < cnt; i++) {
         const s = G.randomSpot(room, 150);
-        G.spawnEnemy(type, s.x, s.y, 0.7 + Math.random() * 0.5);
+        const e = G.spawnEnemy(type, s.x, s.y, 0.7 + Math.random() * 0.5);
+        // 精英房最后一波：一只强化的精英怪
+        if (elite && type !== 'mite') { elite = false; e.elite = true; e.hp = e.maxhp = e.hp * 3; e.r *= 1.3; }
       }
     }
   };
@@ -228,6 +245,7 @@
     const n = G.randi(2, 4);
     for (let i = 0; i < n; i++) G.dropPickup('energy', room.cx + G.rand(-40, 40), room.cy + G.rand(-40, 40), 12);
     if (Math.random() < 0.35) G.dropPickup('health', room.cx, room.cy, 15);
+    if (room.elite) { for (let i = 0; i < 10; i++) G.dropPickup('coin', room.cx, room.cy, 2); G.openPerkChoice('elite'); }
   }
   G.clearRoom = clearRoom;
 
@@ -244,7 +262,8 @@
         r.locked = true; r.wave = 0; g.active = r;
         if (g.floor === 1 && r.type === 'combat') {
           const done = d.rooms.filter(o => o.type === 'combat' && o.cleared).length;
-          if (done < 2) { r.gentle = done + 1; if (done === 0) r.waves = 1; }
+          if (done < 2 && !r.elite) { r.gentle = done + 1; if (done === 0) r.waves = 1; }
+          r.ramp = done;
         }
         G.sfx('lock');
         if (r.type === 'boss') G.spawnBoss(r); else G.spawnWave(r);

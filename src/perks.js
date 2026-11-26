@@ -31,20 +31,59 @@
     { id: 'shadow', glyph: '袭', color: '#3ff0da', tag: 1, once: true, name: '影袭', desc: '闪避后 1.5 秒内的下一次攻击必定暴击', apply: p => { p.stats.shadow = true; } }
   ];
 
+  // 按当前构筑加权抽取：已有流派的关联增益更容易出现，用不上的增益更少出现
+  const has = id => G.game.perksTaken.some(k => k.id === id);
+  function weight(k) {
+    const p = G.game.player, ws = p ? p.weapons.filter(Boolean).map(G.weaponShape) : [];
+    const melee = ws.indexOf('blade') >= 0, proj = ws.some(id => !G.WEAPONS[id].kind);
+    let w = k.tag ? 1.1 : 1;
+    if (k.id === 'blast') w *= has('burn') ? 3 : 0.6;
+    if (k.id === 'burn' && (has('blast') || has('burn'))) w *= 1.8;
+    if (k.id === 'chain' && (has('chain') || has('thrift'))) w *= 1.6;
+    if (k.id === 'frost' && has('pierce')) w *= 1.8;
+    if (k.id === 'pierce' && has('frost')) w *= 1.6;
+    if (k.id === 'wave') w *= melee ? 3 : 0.25;
+    if (k.id === 'shadow' && (melee || has('keen'))) w *= 1.8;
+    if (k.id === 'multi' && !proj) w *= 0.2;
+    if (k.id === 'velocity' && !proj) w *= 0.3;
+    for (const e of G.EVOLUTIONS) if (ws.indexOf(e.from) >= 0 && e.perks.indexOf(k.id) >= 0) w *= 2;
+    return w;
+  }
   G.rollPerks = function (n) {
     const taken = G.game.perksTaken;
-    const pool = G.PERKS.filter(k => !(k.once && taken.indexOf(k) >= 0));
-    return G.shuffle(pool.slice()).slice(0, n);
+    const pool = G.PERKS.filter(k => !(k.once && taken.indexOf(k) >= 0)).map(k => ({ k, w: weight(k) }));
+    const out = [];
+    while (out.length < n && pool.length) {
+      let r = Math.random() * pool.reduce((a, o) => a + o.w, 0), i = 0;
+      while (i < pool.length - 1 && (r -= pool[i].w) > 0) i++;
+      out.push(pool.splice(i, 1)[0].k);
+    }
+    return out;
   };
+  // 可进化的武器：持有基础武器并已获得配方里的两项增益
+  G.evolutionsReady = function () {
+    const p = G.game.player;
+    return G.EVOLUTIONS.filter(e => p.weapons.indexOf(e.from) >= 0 && e.perks.every(has));
+  };
+  function evoCard(e) {
+    const to = G.WEAPONS[e.to];
+    return { id: 'evo_' + e.to, glyph: '进', color: to.color, tag: 2, evo: e, name: to.name, desc: to.desc,
+      apply: p => { const i = p.weapons.indexOf(e.from); if (i >= 0) { p.weapons[i] = e.to; p.cur = i; G.ach.ev('weapon', e.to); } } };
+  }
   G.applyPerk = function (perk) {
     const g = G.game;
     perk.apply(g.player);
+    if (perk.evo) { G.sfx('phase'); g.shake = 8; G.burst(g.player.x, g.player.y, perk.color, 40, 300, 0.7, 4); return; }
     g.perksTaken.push(perk);
     G.ach.ev('perk');
   };
-  G.openPerkChoice = function () {
+  // mode：floor（守护者之后，选完进入下一层）| elite（精英房战利品）| start（启程之礼）
+  G.openPerkChoice = function (mode) {
     const g = G.game;
+    g.perkMode = mode || 'floor';
     g.perkChoices = G.rollPerks(3);
+    const evo = G.evolutionsReady()[0];
+    if (evo && g.perkMode !== 'start') g.perkChoices[1] = evoCard(evo);
     g.state = 'perk';
     g.stateT = 0;
   };
@@ -53,6 +92,7 @@
     if (!perk) return;
     G.applyPerk(perk);
     G.sfx('perk');
+    if (g.perkMode !== 'floor') { g.state = 'play'; g.stateT = 0; G.input.down = false; G.save.timer = 0.5; return; }
     const cleared = g.floor;
     G.startFloor(g.floor + 1);
     // 层间幕间剧情，播完（或跳过）后从新楼层的标题卡开始
