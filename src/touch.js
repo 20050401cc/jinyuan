@@ -117,7 +117,7 @@
 
   // 竖屏提示
   G.drawRotateHint = function (ctx) {
-    if (!T.on || window.innerHeight <= window.innerWidth) return;
+    if (window.innerHeight <= window.innerWidth || !(T.on || navigator.maxTouchPoints > 0 || window.innerWidth < 600)) return;
     ctx.fillStyle = 'rgba(7,4,9,0.86)'; ctx.fillRect(0, 0, G.W, G.H);
     G.text(ctx, '请将设备横过来游玩', G.W / 2, G.H / 2, 40, '#ffe9c8', 'center', true, false, G.W - 60);
   };

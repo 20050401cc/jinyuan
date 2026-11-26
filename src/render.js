@@ -198,7 +198,11 @@
     }
     for (const k of g.pickups) G.glow(ctx, k.kind === 'coin' ? '#ffcf3e' : k.kind === 'energy' ? '#6fe0ff' : '#5dff8a', k.x, k.y, 12, 0.35);
     for (const b of g.bullets) G.glow(ctx, b.color, b.x, b.y, b.r * 4.2, 0.6);
-    for (const e of g.enemies) if (e.def.boss && e.spawnT <= 0) G.glow(ctx, e.def.color, e.x, e.y, e.r * 3 + Math.sin(g.time * 5) * 6, 0.28);
+    for (const e of g.enemies) {
+      if (e.def.boss && e.spawnT <= 0) G.glow(ctx, e.def.color, e.x, e.y, e.r * 3 + Math.sin(g.time * 5) * 6, 0.28);
+      if (e.burnT > 0) G.glow(ctx, '#ff7a2a', e.x, e.y, e.r * 2.4 + Math.sin(g.time * 18 + e.id) * 3, 0.7);
+      if (e.slowT > 0) G.glow(ctx, '#9ad8ff', e.x, e.y, e.r * 2.2, 0.55);
+    }
     if (p.beam) {
       const b = p.beam;
       ctx.globalAlpha = 0.5; ctx.lineCap = 'round'; ctx.strokeStyle = '#3fd8ff'; ctx.lineWidth = 12;
@@ -272,6 +276,17 @@
       } else if (e.type === 'ghost') {
         ctx.globalAlpha = (1 - k) * 0.45; ctx.fillStyle = '#35d0bd';
         ctx.beginPath(); ctx.arc(e.x, e.y, 11 * (1 - k * 0.3), 0, TAU); ctx.fill();
+      } else if (e.type === 'bolt') {
+        // 连锁电弧：每段折成锯齿
+        ctx.globalAlpha = 1 - k; ctx.strokeStyle = e.color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+        ctx.beginPath(); ctx.moveTo(e.pts[0], e.pts[1]);
+        for (let i = 2; i < e.pts.length; i += 2) {
+          const x0 = e.pts[0], y0 = e.pts[1], x1 = e.pts[i], y1 = e.pts[i + 1];
+          ctx.moveTo(x0, y0);
+          for (let j = 1; j < 5; j++) ctx.lineTo(G.lerp(x0, x1, j / 5) + G.rand(-7, 7), G.lerp(y0, y1, j / 5) + G.rand(-7, 7));
+          ctx.lineTo(x1, y1);
+        }
+        ctx.stroke();
       } else if (e.type === 'dust') {
         ctx.globalAlpha = (1 - k) * 0.35; ctx.fillStyle = '#d8cfc4';
         ctx.beginPath(); ctx.arc(e.x, e.y - k * 6, 3 + k * 6, 0, TAU); ctx.fill();
@@ -303,10 +318,10 @@
     // 新楼层：旅人从光柱中落下
     const drop = p.dropT > 0 ? Math.pow(p.dropT / 0.85, 2) * 320 : 0;
     shadow(ctx, p.x, p.y + 11, 11 * (1 - drop / 640));
-    const blink = p.invuln > 0 && p.invuln < 50 && p.dashT <= 0 && !drop && Math.sin(g.time * 40) > 0;
-    if ((!blink || g.state !== 'play') && g.state !== 'dead') {
-      if (g.dying > 0) ctx.globalAlpha = 0.4 + 0.6 * (g.dying / 1.3);
-      ctx.save(); ctx.translate(0, -drop); G.drawPlayerSprite(ctx, p, g); ctx.restore();
+    const blink = g.state === 'play' && p.invuln > 0 && p.invuln < 50 && p.dashT <= 0 && Math.sin(g.time * 40) > 0;
+    if (g.state !== 'dead' && !drop) {
+      ctx.globalAlpha = g.dying > 0 ? 0.4 + 0.6 * (g.dying / 1.3) : blink ? 0.42 : 1;
+      G.drawPlayerSprite(ctx, p, g);
       ctx.globalAlpha = 1;
     }
     ctx.restore();
@@ -315,10 +330,12 @@
 
     ctx.save();
     ctx.translate(ox, oy);
-    if (g.floor === 1) {
+    if (g.floor === 1 && !g.floorCard) {
       const r = g.dungeon.start;
+      ctx.globalAlpha = G.clamp((g.time - (g.hintT0 || 0)) / 0.8, 0, 1);
       G.text(ctx, G.controlHints()[0], r.cx, r.cy - 96, 14, 'rgba(255,236,210,0.5)', 'center');
       G.text(ctx, G.controlHints()[1], r.cx, r.cy + 100, 14, 'rgba(255,236,210,0.5)', 'center');
+      ctx.globalAlpha = 1;
     }
     drawGlowLayer(ctx, g, th);
     if (p.dropT > 0) {
@@ -326,6 +343,7 @@
       lg.addColorStop(0, 'rgba(255,226,184,0)'); lg.addColorStop(1, 'rgba(255,226,184,' + (0.45 * k).toFixed(3) + ')');
       ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = lg; ctx.fillRect(p.x - 22 * k - 6, p.y - 600, 44 * k + 12, 620);
       G.glow(ctx, '#ffe2b8', p.x, p.y, 60, 0.5 * k); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      ctx.save(); ctx.translate(0, -Math.pow(k, 2) * 320); G.drawPlayerSprite(ctx, p, g); ctx.restore();
     }
     drawEnemyOverlays(ctx, g);
     drawBullets(ctx, g);

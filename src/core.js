@@ -57,9 +57,10 @@
     });
     canvas.addEventListener('mousedown', e => {
       setMouse(e);
-      if (e.button === 0) { input.down = true; input.clicked = true; }
-      if (G.nav) G.nav.active = false;
       G.audio.unlock();
+      if (G.nav) G.nav.active = false;
+      if (e.button === 0 && G.hudClick && G.hudClick(input.mx, input.my)) return;
+      if (e.button === 0) { input.down = true; input.clicked = true; }
     });
     window.addEventListener('mouseup', e => { if (e.button === 0) input.down = false; });
     canvas.addEventListener('contextmenu', e => e.preventDefault());

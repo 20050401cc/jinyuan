@@ -17,10 +17,18 @@
     { id: 'blink', glyph: '闪', color: '#5ad6e6', name: '残影', desc: '闪避冷却缩短 30%', apply: p => { p.stats.dashCd *= 0.7; } },
     { id: 'leech', glyph: '噬', color: '#7dff9a', name: '战意回复', desc: '每次击杀回复 2 点生命', apply: p => { p.stats.killHeal += 2; } },
     { id: 'velocity', glyph: '迅', color: '#ffd27a', name: '高压枪膛', desc: '子弹飞行速度 +30%', apply: p => { p.stats.bulletSpeed *= 1.3; } },
-    { id: 'multi', glyph: '叠', color: '#ff7ad1', name: '分裂弹仓', desc: '每次开火多射出 1 发子弹，单发伤害 -12%', apply: p => { p.stats.multishot += 1; p.stats.dmg *= 0.88; } },
+    { id: 'multi', glyph: '叠', color: '#ff7ad1', name: '分裂弹仓', desc: '子弹类武器每次开火多射出 1 发，单发伤害 -12%（光束和近战不受影响）', apply: p => { p.stats.multishot += 1; } },
     { id: 'thorns', glyph: '棘', color: '#8fb7ff', name: '反击脉冲', desc: '受伤时向四周释放一圈子弹', once: true, apply: p => { p.stats.thorns = true; } },
     { id: 'greed', glyph: '财', color: '#ffd86b', name: '拾荒者', desc: '获得的金币 +50%', apply: p => { p.stats.goldMul += 0.5; } },
-    { id: 'thrift', glyph: '省', color: '#a4ff7a', name: '节能回路', desc: '武器能量消耗 -25%', apply: p => { p.stats.costMul *= 0.75; } }
+    { id: 'thrift', glyph: '省', color: '#a4ff7a', name: '节能回路', desc: '武器能量消耗 -25%', apply: p => { p.stats.costMul *= 0.75; } },
+    // ---- 机制型增益：改变攻击方式，可以互相联动 ----
+    { id: 'burn', glyph: '灼', color: '#ff8a3a', tag: 1, name: '灼烧弹头', desc: '命中使敌人燃烧 3 秒，每秒受到 8 点伤害（可叠加）', apply: p => { p.stats.burn += 1; } },
+    { id: 'blast', glyph: '爆', color: '#ffb347', tag: 1, once: true, name: '余烬爆裂', desc: '燃烧中的敌人死亡时爆炸，并点燃周围的敌人', apply: p => { p.stats.burnBlast = true; if (!p.stats.burn) p.stats.burn = 1; } },
+    { id: 'chain', glyph: '雷', color: '#8ad6ff', tag: 1, name: '连锁电弧', desc: '命中时有 20% 几率向附近 3 个敌人弹出电弧（50% 伤害）', apply: p => { p.stats.chain += 0.2; } },
+    { id: 'frost', glyph: '霜', color: '#bfe8ff', tag: 1, once: true, name: '寒霜弹头', desc: '命中使敌人减速 40%，减速中的敌人受到的伤害 +20%', apply: p => { p.stats.frost = true; } },
+    { id: 'blood', glyph: '血', color: '#ff4a5a', tag: 1, once: true, name: '血之契约', desc: '生命上限 -20；每损失 10% 生命，伤害 +6%', apply: p => { p.maxHp = Math.max(40, p.maxHp - 20); p.hp = Math.min(p.hp, p.maxHp); p.stats.blood = true; } },
+    { id: 'wave', glyph: '斩', color: '#ff7ad1', tag: 1, once: true, name: '残光剑气', desc: '近战挥砍会射出一道穿透剑气；每斩碎一颗子弹回复 2 点能量', apply: p => { p.stats.wave = true; } },
+    { id: 'shadow', glyph: '袭', color: '#3ff0da', tag: 1, once: true, name: '影袭', desc: '闪避后 1.5 秒内的下一次攻击必定暴击', apply: p => { p.stats.shadow = true; } }
   ];
 
   G.rollPerks = function (n) {

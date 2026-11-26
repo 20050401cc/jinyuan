@@ -3,7 +3,7 @@
 (function () {
   const G = window.G;
   const KEY = 'jinyuan.settings.v1';
-  G.VERSION = '1.1.0';
+  G.VERSION = '1.2.0';
   G.desktop = window.jinyuanDesktop || null; // 桌面版（Electron）注入的接口
 
   const DEF = {
@@ -22,7 +22,8 @@
     } catch (e) { /* 损坏时用默认值 */ }
     if (!S.lang) S.lang = G.detectLang();
     G.setLang(S.lang);
-    if (S.inputMode === 'auto') S.inputMode = G.touch.on ? 'touch' : 'pc';
+    const touchDev = G.touch.on || (navigator.maxTouchPoints > 0 && window.innerHeight > window.innerWidth);
+    if (S.inputMode === 'auto') S.inputMode = touchDev ? 'touch' : 'pc';
     if (G.desktop && G.desktop.isFullscreen) S.fullscreen = !!G.desktop.isFullscreen();
     G.applySettings();
   };

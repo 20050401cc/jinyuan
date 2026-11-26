@@ -253,8 +253,8 @@
     if (!f || g.cine) return;
     f.t += dt;
     const t = f.t, D = 3.6;
-    if (t > D) { g.floorCard = null; return; }
-    const a = ease((t - 0.25) / 0.5) * (1 - ease((t - D + 0.7) / 0.7)), y = G.H * 0.34, th = G.THEMES[Math.min(f.n, 3) - 1];
+    if (t > D) { g.floorCard = null; g.hintT0 = g.time; return; }
+    const a = ease((t - 0.25) / 0.5) * (1 - ease((t - D + 0.7) / 0.7)), y = G.H * 0.2, th = G.THEMES[Math.min(f.n, 3) - 1];
     const lw = 240 * out3((t - 0.2) / 0.9);
     ctx.globalAlpha = a;
     const gr = ctx.createLinearGradient(0, 0, G.W, 0);

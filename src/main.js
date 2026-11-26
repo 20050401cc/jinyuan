@@ -18,7 +18,7 @@
     g.enemies.length = g.bullets.length = g.ebullets.length = 0;
     g.pickups.length = g.items.length = g.particles.length = g.texts.length = g.effects.length = g.stains.length = 0;
     g.fade = 1;
-    g.active = null; g.boss = null; g.winT = -1; g.shake = 0; g.cine = null; g.sub = null; g.slow = null; g.flash = 0; g.dying = 0;
+    g.active = null; g.boss = null; g.winT = -1; g.shake = 0; g.cine = null; g.bigMap = false; g.sub = null; g.slow = null; g.flash = 0; g.dying = 0;
     g.dungeon = G.genDungeon(n);
     G.decorate(g.dungeon);
     const p = g.player, st = g.dungeon.start;
@@ -112,7 +112,8 @@
     g.time += dt; g.stateT += dt;
     if (g.dungeon) G.prebake(g.dungeon);
     if (g.fade > 0 && g.state !== 'perk') g.fade = Math.max(0, g.fade - dt * 1.6);
-    if (I.pressed.KeyM) G.audio.muted = !G.audio.muted;
+    if (I.pressed.KeyM) G.toggleMute();
+    if (g.toast) { g.toast.t -= dt; if (g.toast.t <= 0) g.toast = null; }
     if (I.pressed.F3) { G.settings.fps = G.debug.fps = !G.debug.fps; G.saveSettings(); }
     G.ach.tick(dt);
     if ((g.cfgT = (g.cfgT || 0) + dt) > 1) { g.cfgT = 0; G.save.syncCfg(); }
@@ -130,7 +131,9 @@
         break;
       case 'play': {
         if (g.cine) { G.updateCine(dt); break; }
-        if (!g.dying && (I.pressed.Escape || I.pressed.KeyP)) { g.state = 'pause'; g.stateT = 0; G.save.write(); break; }
+        if (I.pressed.Tab) g.bigMap = !g.bigMap;
+        if (g.bigMap && I.pressed.Escape) { g.bigMap = false; I.pressed.Escape = false; }
+        if (!g.dying && (I.pressed.Escape || I.pressed.KeyP)) { g.state = 'pause'; g.stateT = 0; g.bigMap = false; G.save.write(); break; }
         let sdt = dt;
         if (g.slow && g.slow.t > 0) { g.slow.t -= dt; sdt = dt * g.slow.k; if (g.slow.t <= 0) g.slow = null; }
         updatePlay(sdt);

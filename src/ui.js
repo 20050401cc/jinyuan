@@ -78,10 +78,15 @@
 
   const ROOM_COLOR = { start: '#cfd6e0', combat: '#9a9fae', chest: '#ffd24a', shop: '#5dff8a', boss: '#ff5d6c' };
   function minimap(ctx, g, th) {
-    const d = g.dungeon, N = G.GRID_N, cw = 27, ch = 19, ox = G.W - 18 - N * cw, oy = 18;
+    const N = G.GRID_N, cw = 27, ch = 19, ox = G.W - 18 - N * cw, oy = 18;
     panel(ctx, ox - 9, oy - 9, N * cw + 18, N * ch + 18, th.accent, 0.72);
+    mapDraw(ctx, g, ox, oy, cw, ch, 1);
+  }
+  // 按格子尺寸画出地牢房间图（小地图和展开地图共用）
+  function mapDraw(ctx, g, ox, oy, cw, ch, k) {
+    const d = g.dungeon, N = G.GRID_N;
     const cx = r => ox + r.gx * cw + cw / 2, cy = r => oy + r.gy * ch + ch / 2;
-    ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)'; ctx.lineWidth = 3 * k;
     for (const a of d.rooms) for (const j of a.links) {
       const b = d.rooms[j];
       if (b.id < a.id || !(a.visited || b.visited)) continue;
@@ -89,7 +94,7 @@
     }
     for (const r of d.rooms) {
       if (!r.seen) continue;
-      const w = 9 + r.w * 0.55, h = 7 + r.h * 0.5, x = cx(r) - w / 2, y = cy(r) - h / 2, col = ROOM_COLOR[r.type];
+      const w = (9 + r.w * 0.55) * k, h = (7 + r.h * 0.5) * k, x = cx(r) - w / 2, y = cy(r) - h / 2, col = ROOM_COLOR[r.type];
       if (r.visited) {
         ctx.fillStyle = '#140e14'; rr(ctx, x - 1, y - 1, w + 2, h + 2, 2); ctx.fill();
         ctx.globalAlpha = r.cleared || r.type !== 'combat' ? 0.95 : 0.55;
@@ -97,7 +102,7 @@
       } else {
         ctx.fillStyle = 'rgba(0,0,0,0.55)'; rr(ctx, x, y, w, h, 2); ctx.fill();
         ctx.strokeStyle = r.type === 'boss' ? col : 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1; ctx.stroke();
-        if (r.type === 'boss') { ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(cx(r), cy(r) - 3.5); ctx.lineTo(cx(r) + 3.5, cy(r)); ctx.lineTo(cx(r), cy(r) + 3.5); ctx.lineTo(cx(r) - 3.5, cy(r)); ctx.fill(); }
+        if (r.type === 'boss') { const q = 3.5 * k; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(cx(r), cy(r) - q); ctx.lineTo(cx(r) + q, cy(r)); ctx.lineTo(cx(r), cy(r) + q); ctx.lineTo(cx(r) - q, cy(r)); ctx.fill(); }
       }
       if (r === g.room) {
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.6 + Math.sin(g.time * 5) * 0.4;
@@ -105,8 +110,80 @@
       }
     }
     const S = G.TILE, p = g.player;
-    ctx.fillStyle = '#140e14'; ctx.beginPath(); ctx.arc(ox + p.x / S / 28 * cw, oy + p.y / S / 22 * ch, 3.6, 0, TAU); ctx.fill();
-    ctx.fillStyle = '#3ff0da'; ctx.beginPath(); ctx.arc(ox + p.x / S / 28 * cw, oy + p.y / S / 22 * ch, 2.4, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#140e14'; ctx.beginPath(); ctx.arc(ox + p.x / S / 28 * cw, oy + p.y / S / 22 * ch, 3.6 * Math.sqrt(k), 0, TAU); ctx.fill();
+    ctx.fillStyle = '#3ff0da'; ctx.beginPath(); ctx.arc(ox + p.x / S / 28 * cw, oy + p.y / S / 22 * ch, 2.4 * Math.sqrt(k), 0, TAU); ctx.fill();
+  }
+
+  // 展开地图（Tab 或点击小地图）
+  const LEGEND = [['start', '起点'], ['combat', '战斗'], ['chest', '宝箱'], ['shop', '商店'], ['boss', '守护者']];
+  function bigMap(ctx, g, th) {
+    const N = G.GRID_N, k = 3.2, cw = 27 * k, ch = 19 * k, w = N * cw + 60, h = N * ch + 120, x = (G.W - w) / 2, y = (G.H - h) / 2;
+    ctx.fillStyle = 'rgba(7,4,9,0.55)'; ctx.fillRect(0, 0, G.W, G.H);
+    panel(ctx, x, y, w, h, th.accent, 0.92);
+    G.text(ctx, G.tf('第 {0} 层', g.floor) + ' · ' + G.tr(th.name), G.W / 2, y + 26, 16, '#ffe9c8', 'center', true);
+    mapDraw(ctx, g, x + 30, y + 48, cw, ch, k * 0.75);
+    let lx = G.W / 2 - LEGEND.length * 46;
+    for (const [t, s] of LEGEND) {
+      ctx.fillStyle = ROOM_COLOR[t]; rr(ctx, lx, y + h - 40, 12, 12, 2); ctx.fill();
+      text(ctx, s, lx + 18, y + h - 33.5, 12, '#c8bcc0', 'left', false, false, 62); lx += 92;
+    }
+    text(ctx, G.touch.on ? '轻触关闭' : 'Tab / 点击关闭', G.W / 2, y + h - 12, 11, '#8a8088', 'center');
+  }
+
+  // 桌面端右上角小按钮：展开地图、静音、暂停
+  function hudBtns() {
+    const N = G.GRID_N, y = 18 + N * 19 + 18, s = 30, r = G.W - 18;
+    return [{ id: 'pause', x: r - s, y, s }, { id: 'mute', x: r - s * 2 - 8, y, s }, { id: 'map', x: r - s * 3 - 16, y, s }];
+  }
+  function drawHudButtons(ctx, g) {
+    const I = G.input;
+    for (const b of hudBtns()) {
+      const hov = I.mx >= b.x && I.mx <= b.x + b.s && I.my >= b.y && I.my <= b.y + b.s;
+      ctx.fillStyle = hov ? 'rgba(60,48,64,0.9)' : 'rgba(12,9,14,0.62)'; rr(ctx, b.x, b.y, b.s, b.s, 6); ctx.fill();
+      ctx.strokeStyle = hov ? '#ffb05a' : 'rgba(255,255,255,0.14)'; ctx.lineWidth = 1; ctx.stroke();
+      const cx = b.x + b.s / 2, cy = b.y + b.s / 2, col = hov ? '#fff' : '#bdb2bc';
+      ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+      if (b.id === 'pause') { ctx.fillRect(cx - 5, cy - 6, 3.5, 12); ctx.fillRect(cx + 1.5, cy - 6, 3.5, 12); }
+      else if (b.id === 'mute') {
+        ctx.beginPath(); ctx.moveTo(cx - 8, cy - 3); ctx.lineTo(cx - 4, cy - 3); ctx.lineTo(cx + 1, cy - 7); ctx.lineTo(cx + 1, cy + 7); ctx.lineTo(cx - 4, cy + 3); ctx.lineTo(cx - 8, cy + 3); ctx.closePath(); ctx.fill();
+        ctx.beginPath();
+        if (G.audio.muted) { ctx.strokeStyle = '#ff6b7a'; ctx.moveTo(cx + 4, cy - 4); ctx.lineTo(cx + 9, cy + 4); ctx.moveTo(cx + 9, cy - 4); ctx.lineTo(cx + 4, cy + 4); }
+        else { ctx.arc(cx + 2, cy, 5, -0.8, 0.8); ctx.moveTo(cx + 5.5, cy - 7); ctx.arc(cx + 2, cy, 8.5, -0.8, 0.8); }
+        ctx.stroke();
+      } else {
+        ctx.strokeRect(cx - 7, cy - 6, 14, 12); ctx.beginPath(); ctx.moveTo(cx - 2.3, cy - 6); ctx.lineTo(cx - 2.3, cy + 6); ctx.moveTo(cx + 2.3, cy - 6); ctx.lineTo(cx + 2.3, cy + 6); ctx.stroke();
+      }
+    }
+  }
+  // 桌面端鼠标点在 HUD 按钮或小地图上时执行对应操作，并且不触发射击
+  G.hudClick = function (x, y) {
+    const g = G.game;
+    if (g.state !== 'play' || G.touch.on || g.cine || g.dying) return false;
+    if (g.bigMap) { g.bigMap = false; return true; }
+    for (const b of hudBtns()) {
+      if (x < b.x || x > b.x + b.s || y < b.y || y > b.y + b.s) continue;
+      if (b.id === 'pause') G.input.pressed.Escape = true;
+      else if (b.id === 'mute') G.toggleMute();
+      else g.bigMap = true;
+      G.sfx('ui');
+      return true;
+    }
+    const N = G.GRID_N, ox = G.W - 18 - N * 27 - 9;
+    if (x >= ox && y <= 18 + N * 19 + 9) { g.bigMap = true; G.sfx('ui'); return true; }
+    return false;
+  };
+  G.toggleMute = function () {
+    G.audio.muted = !G.audio.muted;
+    if (G.game.state === 'play') G.game.toast = { text: G.audio.muted ? '已静音（M 恢复）' : '声音已开启', t: 1.6 };
+  };
+  // 武器对比：拾取或购买前显示和将被替换的武器的差别
+  const dps = id => { const w = G.WEAPONS[id]; return w.dmg * (w.count || 1) / w.cd; };
+  function weaponCompare(p, id) {
+    const s = p.stats, now = p.weapons[1] ? p.weapons[p.cur] : null, k = s.dmg * s.rate;
+    const a = Math.round(dps(id) * k), cost = w => Math.round(G.WEAPONS[w].cost * s.costMul * 10) / 10;
+    if (!now) return { text: G.tf('DPS {0} · 耗能 {1} · 放入空槽', a, cost(id)), better: true };
+    const b = Math.round(dps(now) * k);
+    return { text: G.tf('替换 {0}：DPS {1} → {2} · 耗能 {3} → {4}', G.tr(G.WEAPONS[now].name), b, a, cost(now), cost(id)), better: a >= b };
   }
 
   function divider(ctx, x, y, w, color) {
@@ -143,7 +220,14 @@
     bar(ctx, bx, by, 190, 17, hf, lag.hp, hf < 0.3 && Math.sin(g.time * 10) > 0 ? '#ff9aa4' : '#ff5d6c', 'heart', Math.ceil(p.hp) + ' / ' + p.maxHp, Math.round(p.maxHp / 25));
     bar(ctx, bx, by + 24, 190, 15, p.shield / p.maxShield, 0, '#8fb7ff', 'shield', Math.floor(p.shield) + ' / ' + p.maxShield, Math.round(p.maxShield / 10));
     bar(ctx, bx, by + 46, 190, 15, p.energy / p.maxEnergy, 0, '#5fd8f5', 'bolt', Math.floor(p.energy) + ' / ' + p.maxEnergy, Math.round(p.maxEnergy / 20));
-    // 闪避冷却
+    // 闪避冷却（触屏版的冷却环画在「闪」按钮上）
+    if (!G.touch.on) drawDashIcon(ctx, p);
+    drawHudRest(ctx, g, p, th);
+    if (!G.touch.on) drawHudButtons(ctx, g);
+    if (g.bigMap) bigMap(ctx, g, th);
+    if (g.toast && g.toast.t > 0) { ctx.globalAlpha = Math.min(1, g.toast.t * 3); G.textO(ctx, g.toast.text, G.W / 2, 92, 16, '#ffe9c8', 'center'); ctx.globalAlpha = 1; }
+  };
+  function drawDashIcon(ctx, p) {
     const dk = G.clamp(1 - p.dashCd / p.stats.dashCd, 0, 1), dx = 306, dy = G.H - 46;
     ctx.fillStyle = 'rgba(12,9,14,0.75)'; ctx.beginPath(); ctx.arc(dx, dy, 21, 0, TAU); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(dx, dy, 17, 0, TAU); ctx.stroke();
@@ -152,8 +236,9 @@
     ctx.fillStyle = dk >= 1 ? '#3ff0da' : '#8a8490';
     for (let i = 0; i < 3; i++) { ctx.globalAlpha = 0.4 + i * 0.3; ctx.beginPath(); ctx.moveTo(dx - 9 + i * 6, dy - 5); ctx.lineTo(dx - 3 + i * 6, dy); ctx.lineTo(dx - 9 + i * 6, dy + 5); ctx.lineTo(dx - 7 + i * 6, dy); ctx.closePath(); ctx.fill(); }
     ctx.globalAlpha = 1;
-    if (!G.touch.on) text(ctx, G.keyName('dash'), dx, dy + 31, 10, '#8a8490', 'center');
-
+    text(ctx, G.keyName('dash'), dx, dy + 31, 10, '#8a8490', 'center');
+  }
+  function drawHudRest(ctx, g, p, th) {
     // 右下：两把武器
     for (let i = 0; i < 2; i++) {
       const id = p.weapons[i], cur = i === p.cur, w = cur ? 196 : 176, h = cur ? 50 : 40;
@@ -199,6 +284,7 @@
       text(ctx, label, x + 40, y + 17.5, 14, '#ffeccc', 'left', true);
       const sub = p.near.kind === 'weapon' ? G.WEAPONS[p.near.wid].desc : p.near.item === 'perk' ? p.near.perk.desc : '';
       if (sub) G.textO(ctx, sub, G.W / 2, y + 48, 12, '#d8d0d8', 'center');
+      if (p.near.kind === 'weapon') { const c = weaponCompare(p, p.near.wid); G.textO(ctx, c.text, G.W / 2, y + 66, 12, c.better ? '#9dff8a' : '#ffb0a0', 'center'); }
     }
 
     // 横幅
@@ -315,13 +401,15 @@
     if (G.ach.count()) text(ctx, G.tf('成就 {0} / {1}', G.ach.count(), G.ach.list.length), 16, 36, 12, '#a89080', 'left');
 
     // 第二步：对应的操作方式
-    panel(ctx, G.W / 2 - 270, 338, 540, 136, '#ff9d4a', 0.62);
+    // 手机端多一个体感开关，说明框收紧一些，给开始按钮留出空间
+    const T = G.touch.on, rowH = T ? 35 : 40;
+    panel(ctx, G.W / 2 - 270, 338, 540, T ? 118 : 136, '#ff9d4a', 0.62);
     const rows = mode === 'pad' ? [['左摇杆', '移动'], ['右摇杆 / RT', '瞄准 · 射击'], ['A / LT', '闪避（冲刺时无敌）'], ['Y / LB', '切换武器'], ['X', '拾取 · 开箱 · 购买'], ['Start', '暂停']]
       : G.touch.on
       ? [G.motion.status === 'ok' ? ['倾斜设备', '移动（甩动可闪避）'] : ['左半屏拖动', '移动'], ['右半屏拖动', '瞄准并射击'], ['右半屏按住', '自动瞄准最近敌人'], ['「闪」按钮', '闪避（冲刺时无敌）'], ['点武器栏', '切换武器'], ['「E」按钮', '拾取 · 开箱 · 购买']]
       : [['W A S D', '移动'], ['鼠标 / 左键', '瞄准 · 射击'], ['空格', '闪避（冲刺时无敌）'], ['Q / 滚轮', '切换武器'], ['E', '拾取 · 开箱 · 购买'], ['Esc / M', '暂停 · 静音']];
     rows.forEach((r, i) => {
-      const x = G.W / 2 - 250 + (i % 2) * 262, y = 362 + Math.floor(i / 2) * 40;
+      const x = G.W / 2 - 250 + (i % 2) * 262, y = (T ? 359 : 362) + Math.floor(i / 2) * rowH;
       ctx.font = 'bold 12px ' + G.FONT;
       const kw = ctx.measureText(G.tr(r[0])).width + 16;
       ctx.fillStyle = '#3a2e30'; rr(ctx, x, y - 12, kw, 24, 5); ctx.fill();
@@ -332,9 +420,10 @@
 
     // 第三步：开始
     if (G.touch.on) {
-      G.motionToggle(ctx, G.W / 2 - 170, 482, 340, 34);
-      startButtons(ctx, 526, 50);
-      if (G.motion.status === 'ok') text(ctx, '以开始时的握持姿势为中立位，暂停再继续可重新校准', G.W / 2, 588, 11, '#9a8478', 'center');
+      G.motionToggle(ctx, G.W / 2 - 170, 468, 340, 30);
+      startButtons(ctx, 508, 48);
+      if (G.motion.status === 'ok') text(ctx, '以开始时的握持姿势为中立位，暂停再继续可重新校准', G.W / 2, 578, 11, '#9a8478', 'center', false, false, G.W - 80);
+      else text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 578, 12, '#9a8478', 'center', false, false, G.W - 80);
     } else {
       startButtons(ctx, 490, 54);
       text(ctx, '清空房间 · 收集武器 · 每层选择一项增益 · 击败三位守护者', G.W / 2, 570, 12, '#9a8478', 'center', false, false, G.W - 80);
@@ -375,8 +464,8 @@
       ctx.fillStyle = col; ctx.fillRect(ix - 11, iy - 3, 7, 2); ctx.fillRect(ix - 8.5, iy - 5.5, 2, 7);
       ctx.beginPath(); ctx.arc(ix + 8, iy - 3, 1.7, 0, TAU); ctx.arc(ix + 12, iy, 1.7, 0, TAU); ctx.fill();
     }
-    text(ctx, title, x + 64, y + h / 2 - 10, 18, sel ? '#fff3e0' : '#c8bec4', 'left', true, false, w - 92);
-    text(ctx, sub, x + 64, y + h / 2 + 13, 11, sel ? '#ffcf9a' : '#8a8088', 'left', false, false, w - 76);
+    text(ctx, title, x + 64, y + h / 2 - 10, 18, sel ? '#fff3e0' : '#c8bec4', 'left', true, false, w - 104);
+    text(ctx, sub, x + 64, y + h / 2 + 13, 11, sel ? '#ffcf9a' : '#8a8088', 'left', false, false, w - 84);
     ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x + w - 17, y + 15, 6, 0, TAU); ctx.stroke();
     if (sel) { ctx.fillStyle = '#ffb05a'; ctx.beginPath(); ctx.arc(x + w - 17, y + 15, 3.5, 0, TAU); ctx.fill(); }
     if (it.click) { G.sfx('ui'); return true; }
@@ -399,7 +488,7 @@
     y += 54;
     if (G.button(ctx, x, y, 220, h, '返回主菜单')) { G.save.write(); g.state = 'menu'; }
     y += 70;
-    text(ctx, G.controlHints().map(G.tr).join(' · '), G.W / 2, y, 12, '#a89ea8', 'center', false, false, 360);
+    G.controlHints().forEach((h, i) => text(ctx, h, G.W / 2, y - 8 + i * 18, 12, '#a89ea8', 'center', false, false, 350));
     if (g.perksTaken.length) perkRow(ctx, g, T ? 540 : 500);
   };
   function perkRow(ctx, g, y) {
@@ -444,8 +533,11 @@
       ctx.restore();
       text(ctx, k.glyph, x + cw / 2, yy + 94, 44, k.color, 'center', true, true);
       text(ctx, k.name, x + cw / 2, yy + 176, 23, '#fff', 'center', true, false, cw - 24);
+      if (k.tag) { ctx.font = 'bold 11px ' + G.FONT; const tw = ctx.measureText(G.tr('机制')).width + 16; ctx.fillStyle = G.rgba(k.color, 0.2); rr(ctx, x + cw / 2 - tw / 2, yy + 14, tw, 20, 10); ctx.fill(); ctx.strokeStyle = k.color; ctx.lineWidth = 1; ctx.stroke(); text(ctx, '机制', x + cw / 2, yy + 24.5, 11, k.color, 'center', true); }
       divider(ctx, x + cw / 2, yy + 198, 56, k.color);
-      wrap(ctx, k.desc, x + cw / 2, yy + 224, cw - 44, 21, 14, '#d0c8d0');
+      ctx.font = '14px ' + G.FONT;
+      const many = G.wrapLines(ctx, k.desc, cw - 44).length > 2;
+      wrap(ctx, k.desc, x + cw / 2, yy + (many ? 218 : 224), cw - 44, many ? 18 : 21, many ? 12.5 : 14, '#d0c8d0');
       ctx.fillStyle = hover ? '#f7a653' : '#3a343e'; rr(ctx, x + cw / 2 - 12, yy + chh - 34, 24, 22, 5); ctx.fill();
       text(ctx, String(i + 1), x + cw / 2, yy + chh - 22.5, 13, hover ? '#2a1204' : '#aaa', 'center', true);
       ctx.globalAlpha = 1;

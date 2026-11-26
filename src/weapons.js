@@ -28,9 +28,13 @@
     p.recoil = 1; p.muzzle = 1;
     const ang = p.aim;
     const mx = p.x + Math.cos(ang) * 14, my = p.y + Math.sin(ang) * 14;
+    // 血之契约：每损失 10% 生命伤害 +6%；影袭：闪避后的下一次攻击必定暴击
+    const bloodMul = s.blood ? 1 + Math.floor((1 - p.hp / p.maxHp) * 10) * 0.06 : 1;
+    const sure = p.shadowT > 0;
+    if (sure) p.shadowT = 0;
     const roll = () => {
-      const c = Math.random() < s.crit;
-      return { d: w.dmg * s.dmg * (c ? 2 : 1), c };
+      const c = sure || Math.random() < s.crit;
+      return { d: w.dmg * s.dmg * bloodMul * (c ? 2 : 1), c };
     };
     G.sfx(w.sfx);
 
@@ -47,6 +51,7 @@
 
     if (w.kind === 'melee') {
       g.effects.push({ type: 'slash', x: p.x, y: p.y, ang, range: w.range, arc: w.arc, t: 0, dur: 0.16, color: w.color });
+      if (s.wave) { const r = roll(); G.spawnBullet({ friendly: true, x: mx, y: my, vx: Math.cos(ang) * 520, vy: Math.sin(ang) * 520, r: 9, dmg: r.d * 0.6, crit: r.c, life: 0.45, color: w.color, pierce: 99 }); }
       for (const e of g.enemies.slice()) {
         if (e.spawnT > 0 || e.dead) continue;
         const d = Math.hypot(e.x - p.x, e.y - p.y);
@@ -60,13 +65,14 @@
         const b = eb[i], d = Math.hypot(b.x - p.x, b.y - p.y);
         if (d < w.range + 6 && Math.abs(G.angDiff(Math.atan2(b.y - p.y, b.x - p.x), ang)) < w.arc / 2) {
           G.burst(b.x, b.y, '#fff', 3, 90, 0.2, 2);
+          if (s.wave) p.energy = Math.min(p.maxEnergy, p.energy + 2);
           eb[i] = eb[eb.length - 1]; eb.pop();
         }
       }
       return;
     }
 
-    const n = w.count + s.multishot;
+    const n = w.count + s.multishot, split = Math.pow(0.88, s.multishot);
     for (let i = 0; i < n; i++) {
       let a;
       if (w.count > 1) a = ang + (Math.random() - 0.5) * w.spread;
@@ -75,7 +81,7 @@
       const r = roll();
       G.spawnBullet({
         friendly: true, x: mx, y: my, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
-        r: w.r || 4, dmg: r.d, crit: r.c, life: w.life || 1.4, color: w.color,
+        r: w.r || 4, dmg: r.d * split, crit: r.c, life: w.life || 1.4, color: w.color,
         bounce: w.bounce || 0, pierce: s.pierce, homing: w.homing || 0, explode: w.explode || 0
       });
     }

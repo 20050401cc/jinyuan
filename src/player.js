@@ -12,7 +12,8 @@
       emptyT: 0, recoil: 0, muzzle: 0, moving: false, capeX: 0, capeY: 0, stepT: 0, beam: null, near: null, walk: 0, hurtFlash: 0,
       stats: {
         dmg: 1, rate: 1, speed: 1, crit: 0.05, pierce: 0, multishot: 0, costMul: 1, bulletSpeed: 1,
-        shieldDelay: 3.5, shieldRate: 14, dashCd: 1.1, killEnergy: 0, killHeal: 0, thorns: false, goldMul: 1
+        shieldDelay: 3.5, shieldRate: 14, dashCd: 1.1, killEnergy: 0, killHeal: 0, thorns: false, goldMul: 1,
+        burn: 0, burnBlast: false, chain: 0, frost: false, blood: false, wave: false, shadow: false
       }
     };
   };
@@ -28,6 +29,7 @@
     if (G.touch.mvx || G.touch.mvy) { mx = G.touch.mvx; my = G.touch.mvy; ml = 1; }
     if (G.pad.mvx || G.pad.mvy) { mx = G.pad.mvx; my = G.pad.mvy; ml = 1; }
 
+    p.shadowT = (p.shadowT || 0) - dt;
     p.dashCd -= dt; p.invuln -= dt; p.cd -= dt; p.emptyT -= dt; p.hurtFlash -= dt;
     p.recoil = Math.max(0, p.recoil - dt * 8);
     p.muzzle = Math.max(0, p.muzzle - dt * 14);
@@ -46,6 +48,7 @@
         const dx = ml ? mx : Math.cos(p.aim), dy = ml ? my : Math.sin(p.aim);
         p.dashT = 0.17; p.dvx = dx * 640; p.dvy = dy * 640;
         p.dashCd = s.dashCd; p.invuln = Math.max(p.invuln, 0.24);
+        if (s.shadow) p.shadowT = 1.5;
         G.sfx('dash');
         G.ach.ev('dash');
         for (let i = 0; i < 5; i++) g.effects.push({ type: 'dust', x: p.x + G.rand(-8, 8), y: p.y + 8 + G.rand(-4, 4), t: 0, dur: 0.4 });

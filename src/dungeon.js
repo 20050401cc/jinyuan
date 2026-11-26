@@ -205,7 +205,8 @@
     const g = G.game, floor = g.floor;
     room.wave++;
     let budget = 6 + floor * 3 + G.randi(0, 3) + (room.wave - 1) * 2;
-    const pool = POOLS[Math.min(floor, 3) - 1];
+    let pool = POOLS[Math.min(floor, 3) - 1];
+    if (room.gentle) { budget -= room.gentle === 1 ? 4 : 2; pool = ['lunger', 'lunger', 'mite', 'fuse', 'wick']; }
     let guard = 0;
     while (budget > 0 && guard++ < 60) {
       const type = G.pick(pool), def = G.ENEMIES[type];
@@ -241,6 +242,10 @@
       }
       if ((r.type === 'combat' || r.type === 'boss') && !r.cleared && !r.locked) {
         r.locked = true; r.wave = 0; g.active = r;
+        if (g.floor === 1 && r.type === 'combat') {
+          const done = d.rooms.filter(o => o.type === 'combat' && o.cleared).length;
+          if (done < 2) { r.gentle = done + 1; if (done === 0) r.waves = 1; }
+        }
         G.sfx('lock');
         if (r.type === 'boss') G.spawnBoss(r); else G.spawnWave(r);
       }

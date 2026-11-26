@@ -153,9 +153,29 @@
     return e;
   };
 
+  // 命中触发的增益效果（燃烧、减速、电弧）；持续伤害与电弧本身不再触发，避免连锁失控
+  let noProc = false;
+  function procs(e, dmg) {
+    const s = G.game.player.stats;
+    if (s.burn) { e.burnT = 3; e.burnLv = s.burn; }
+    if (s.frost) e.slowT = 1.6;
+    if (s.chain && Math.random() < s.chain) {
+      const pts = [e.x, e.y];
+      const near = G.game.enemies.filter(o => o !== e && !o.dead && o.spawnT <= 0 && Math.hypot(o.x - e.x, o.y - e.y) < 190)
+        .sort((a, b) => Math.hypot(a.x - e.x, a.y - e.y) - Math.hypot(b.x - e.x, b.y - e.y)).slice(0, 3);
+      noProc = true;
+      for (const o of near) { pts.push(o.x, o.y); G.hurtEnemy(o, dmg * 0.5, false, 0, 0); }
+      noProc = false;
+      if (near.length) G.game.effects.push({ type: 'bolt', pts, t: 0, dur: 0.2, color: '#9ad8ff' });
+    }
+  }
+  G.hurtEnemyDot = function (e, dmg) { noProc = true; G.hurtEnemy(e, dmg, false, 0, 0); noProc = false; };
+
   G.hurtEnemy = function (e, dmg, crit, kx, ky) {
     if (e.dead || e.spawnT > 0) return;
     const g = G.game;
+    if (g.player.stats.frost && e.slowT > 0) dmg *= 1.2;
+    if (!noProc) procs(e, dmg);
     e.hp -= dmg; e.flash = 0.09;
     if (!e.def.boss) { e.kx += kx || 0; e.ky += ky || 0; }
     g.dmgDealt += dmg;
@@ -181,6 +201,11 @@
     if (p.stats.killHeal && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + p.stats.killHeal);
     // 被击杀的爆燃虫会炸伤周围的敌人
     if (e.type === 'fuse' && !e.selfBoom) G.explode(e.x, e.y, 60, 30, true, false);
+    // 余烬爆裂：燃烧中死去的敌人爆炸并点燃周围
+    if (p.stats.burnBlast && e.burnT > 0) {
+      g.effects.push({ type: 'boom', x: e.x, y: e.y, rad: 70, t: 0, dur: 0.4, color: '#ff8a3a' });
+      for (const o of g.enemies) if (o !== e && !o.dead && Math.hypot(o.x - e.x, o.y - e.y) < 80) { o.burnT = 3; o.burnLv = p.stats.burn; G.hurtEnemyDot(o, 18 * p.stats.dmg); }
+    }
   };
 
   G.updateEnemies = function (dt) {
@@ -190,6 +215,11 @@
       e.age += dt; e.flash -= dt;
       if (e.spawnT > 0) { e.spawnT -= dt; continue; }
       if (e.dead) continue;
+      if (e.burnT > 0) {
+        e.burnT -= dt; e.burnAcc = (e.burnAcc || 0) + dt;
+        if (e.burnAcc >= 0.5) { e.burnAcc -= 0.5; G.burst(e.x, e.y - 4, '#ff8a3a', 2, 60, 0.35, 2); G.hurtEnemyDot(e, 4 * (e.burnLv || 1) * p.stats.dmg); if (e.dead) continue; }
+      }
+      if (e.slowT > 0) e.slowT -= dt;
       if (e.kx || e.ky) {
         G.moveEntity(e, e.kx * dt, e.ky * dt);
         const f = Math.pow(0.002, dt);
@@ -197,7 +227,7 @@
         if (Math.abs(e.kx) + Math.abs(e.ky) < 4) e.kx = e.ky = 0;
       }
       const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
-      e.def.ai(e, dt, g, p, d, Math.atan2(dy, dx));
+      e.def.ai(e, e.slowT > 0 ? dt * (e.def.boss ? 0.85 : 0.6) : dt, g, p, d, Math.atan2(dy, dx));
       if (!e.dead && e.def.touch && d < e.r + p.r - 2) G.hurtPlayer(e.def.touch * g.dmgMul);
     }
     // 互相推开，避免重叠成一团
