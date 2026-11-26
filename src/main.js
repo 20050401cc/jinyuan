@@ -204,7 +204,7 @@
   window.addEventListener('load', () => {
     const canvas = document.getElementById('game');
     ctx = canvas.getContext('2d');
-    if (document.fonts) for (const f of ['16px "JY Sans"', 'bold 16px "JY Sans"', '16px "JY Brush"']) document.fonts.load(f).catch(() => {});
+    if (document.fonts) for (const f of ['16px "JY Sans"', 'bold 16px "JY Sans"', '16px "JY Brush"', '16px "JY Kai"']) document.fonts.load(f).catch(() => {});
     G.initInput(canvas);
     G.initTouch(canvas);
     G.initMotion(canvas);

@@ -110,7 +110,7 @@
 index.html        开发用入口页面，按顺序加载 src/ 下的脚本
 build.py          把 index.html、src/ 和内嵌字体合并成 烬渊.html：python build.py
 STEAM.md          Steam 上架交付说明
-assets/fonts/     内嵌字体（思源黑体、马善政楷书裁剪版，SIL OFL 1.1）及授权
+assets/fonts/     内嵌字体（思源黑体、马善政楷书、霞鹜文楷裁剪版，SIL OFL 1.1；霞鹜文楷用于繁体和日文标题，裁剪后改名 JY Kai）及授权
 desktop/          Windows 桌面版（Electron）：main.js 主进程、preload.js、pack.js 打包脚本
 steam/            商店图形、截图、成就图标与清单、SteamPipe 上传模板
 tools/fonts.py    按游戏用字裁剪字体（改了文字或译文后要重新运行）
@@ -144,6 +144,6 @@ src/main.js       游戏状态机、换层、主循环
 
 改了 `src/` 里的代码后，运行一次 `python build.py` 重新生成 `烬渊.html`。
 
-加新文字时：界面文字直接写中文原文（`G.text` 会自动翻译；拼接的句子用 `G.tf('第 {0} 层', n)` 模板），然后在 `src/lang_en.js`、`src/lang_ja.js` 里补译文，运行 `python tools/i18n.py zht` 生成繁体、`python tools/i18n.py check` 检查是否漏译，最后 `python tools/fonts.py <思源黑体.ttf> <马善政.ttf>` 重新裁剪字体。
+加新文字时：界面文字直接写中文原文（`G.text` 会自动翻译；拼接的句子用 `G.tf('第 {0} 层', n)` 模板），然后在 `src/lang_en.js`、`src/lang_ja.js` 里补译文，运行 `python tools/i18n.py zht` 生成繁体、`python tools/i18n.py check` 检查是否漏译，最后 `python tools/fonts.py <思源黑体.ttf> <马善政.ttf> <霞鹜文楷 Medium.ttf>` 重新裁剪字体。
 
 想调数值：武器在 `src/weapons.js` 的 `G.WEAPONS`，敌人在 `src/enemies.js` 的 `G.ENEMIES`，Boss 血量和招式在 `src/bosses.js`，玩家初始属性在 `src/player.js` 的 `G.createPlayer`，音效和音乐在 `src/audio.js`。

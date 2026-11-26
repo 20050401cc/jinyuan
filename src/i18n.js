@@ -44,8 +44,8 @@
     if (!G.LANGS.some(l => l.id === id)) id = 'zh';
     G.lang = id;
     dict = G.I18N[id];
-    // 楷书字体只覆盖简体字，其它语言的标题改用粗黑体
-    G.FONT_T = id === 'zh' ? '"JY Brush","STXingkai","KaiTi",' + G.FONT_SANS : G.FONT_SANS;
+    // 标题：简体用马善政楷书，繁体和日文用霞鹜文楷（JY Kai），英文用粗黑体
+    G.FONT_T = id === 'zh' ? '"JY Brush","STXingkai","KaiTi",' + G.FONT_SANS : id === 'en' ? G.FONT_SANS : '"JY Kai",' + G.FONT_SANS;
     const L = G.LANGS.find(l => l.id === id);
     try {
       document.documentElement.lang = L.html;

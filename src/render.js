@@ -6,7 +6,7 @@
 
   // 字体见 i18n.js；maxW 给定时超宽的文字会自动缩小字号
   G.setFont = function (ctx, str, size, bold, title, maxW) {
-    const wt = title && G.lang !== 'zh' ? '900 ' : bold ? 'bold ' : '', fam = title ? G.FONT_T : G.FONT;
+    const wt = title && G.lang === 'en' ? '900 ' : bold ? 'bold ' : '', fam = title ? G.FONT_T : G.FONT;
     ctx.font = wt + size + 'px ' + fam;
     if (maxW) {
       const w = ctx.measureText(str).width;

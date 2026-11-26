@@ -68,6 +68,7 @@ if __name__ == '__main__':
         fix = json.load(io.open(os.path.join(D, 'tools', 'zht_fix.json'), encoding='utf8')) if os.path.exists(os.path.join(D, 'tools', 'zht_fix.json')) else {}
         d = {}
         for k in ks:
-            d[k] = fix.get(k, cc.convert(k))
+            # OpenCC 会把「远征」误转成「遠徵」
+            d[k] = fix.get(k, cc.convert(k).replace('遠徵', '遠征').replace('遠 徵', '遠 征'))
         write('zht', '繁體中文', d)
         print('zht', len(d))

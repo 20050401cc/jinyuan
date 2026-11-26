@@ -215,7 +215,6 @@ window.G.I18N.en = {
   "设计 · 程序 · 美术 · 音乐": "Design · Code · Art · Music",
   "烬渊制作组": "The Ember Abyss Team",
   "字体": "Fonts",
-  "思源黑体 · 马善政楷书（SIL OFL 1.1）": "Noto Sans SC · Ma Shan Zheng (SIL OFL 1.1)",
   "感谢游玩": "Thank You for Playing",
   "愿你的灯一直亮着。": "May your lantern always stay lit.",
   "倾斜移动": "Tilt to move",
@@ -316,5 +315,6 @@ window.G.I18N.en = {
   "命中后范围爆炸": "Explodes on impact",
   "追光弩": "Lightseeker",
   "双发箭矢自动追踪目标": "Twin bolts that home in on targets",
-  "能量不足": "Out of energy"
+  "能量不足": "Out of energy",
+  "思源黑体 · 马善政楷书 · 霞鹜文楷（SIL OFL 1.1）": "Noto Sans SC · Ma Shan Zheng · LXGW WenKai (SIL OFL 1.1)"
 };

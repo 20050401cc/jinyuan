@@ -12,7 +12,7 @@
 | `steam/screenshots/` | 10 张 1920×1080 截图（01～07 实机玩法，08～10 剧情过场与守护者登场）。 |
 | `steam/achievements/` | 16 个成就的图标（已解锁 / 未解锁各一张，256×256）和 `achievements.csv`（API 名、名称、描述）。 |
 | `steam/sdk/app_build.vdf` | SteamPipe 上传脚本模板。 |
-| `assets/fonts/` | 内嵌字体（思源黑体、马善政楷书，均为 SIL OFL 1.1，可商用）及授权文本。 |
+| `assets/fonts/` | 内嵌字体（思源黑体、马善政楷书、霞鹜文楷，均为 SIL OFL 1.1，可商用；霞鹜文楷裁剪后改名 JY Kai，遵守其保留字体名条款）及授权文本。 |
 
 重新生成：
 
