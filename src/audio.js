@@ -5,9 +5,10 @@
   const A = G.audio = { ctx: null, failed: false, last: {}, _muted: false, musicOn: true };
   Object.defineProperty(A, 'muted', {
     get() { return A._muted; },
-    set(v) { A._muted = !!v; if (A.master) A.master.gain.setTargetAtTime(v ? 0 : 0.9, A.ctx.currentTime, 0.03); }
+    set(v) { A._muted = !!v; if (A.master) A.master.gain.setTargetAtTime(v ? 0 : A.vol(), A.ctx.currentTime, 0.03); }
   });
 
+  A.vol = () => 0.9 * (G.settings ? G.settings.master : 1);
   A.unlock = function () {
     if (A.failed) return;
     if (A.ctx) { if (A.ctx.state === 'suspended' && !document.hidden) A.ctx.resume(); return; }
@@ -15,7 +16,7 @@
       const AC = window.AudioContext || window.webkitAudioContext, c = A.ctx = new AC();
       const comp = c.createDynamicsCompressor();
       comp.threshold.value = -16; comp.ratio.value = 5; comp.attack.value = 0.004; comp.release.value = 0.18;
-      A.master = c.createGain(); A.master.gain.value = A._muted ? 0 : 0.9;
+      A.master = c.createGain(); A.master.gain.value = A._muted ? 0 : A.vol();
       A.master.connect(comp); comp.connect(c.destination);
       A.sfxBus = c.createGain(); A.sfxBus.gain.value = 0.5; A.sfxBus.connect(A.master);
       A.musBus = c.createGain(); A.musBus.gain.value = 0.4; A.musBus.connect(A.master);
@@ -30,6 +31,7 @@
       const d = A.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       A.tick = schedule;
+      if (G.applyAudio) G.applyAudio();
       setInterval(schedule, 60);
     } catch (err) { A.ctx = null; A.failed = true; }
   };

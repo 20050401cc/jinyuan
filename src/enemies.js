@@ -159,7 +159,7 @@
     e.hp -= dmg; e.flash = 0.09;
     if (!e.def.boss) { e.kx += kx || 0; e.ky += ky || 0; }
     g.dmgDealt += dmg;
-    if (dmg >= 3 || Math.random() < 0.3) G.floatText(e.x, e.y - e.r - 4, String(Math.max(1, Math.round(dmg))), crit ? '#ffe14a' : '#fff', crit ? 16 : 12);
+    if (G.settings.dmgNum && (dmg >= 3 || Math.random() < 0.3)) G.floatText(e.x, e.y - e.r - 4, String(Math.max(1, Math.round(dmg))), crit ? '#ffe14a' : '#fff', crit ? 16 : 12);
     G.sfx('hit');
     if (e.hp <= 0) { e.dead = true; G.onEnemyDeath(e); }
   };
@@ -167,6 +167,7 @@
   G.onEnemyDeath = function (e) {
     const g = G.game, p = g.player, def = e.def;
     g.kills++;
+    G.ach.ev('kill');
     G.sfx('kill');
     G.burst(e.x, e.y, def.color, def.boss ? 60 : 10, def.boss ? 380 : 190, def.boss ? 0.9 : 0.45, def.boss ? 5 : 3);
     G.shards(e.x, e.y, def.color, def.boss ? 26 : e.type === 'mite' ? 3 : 7, def.boss ? 420 : 230);

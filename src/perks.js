@@ -32,6 +32,7 @@
     const g = G.game;
     perk.apply(g.player);
     g.perksTaken.push(perk);
+    G.ach.ev('perk');
   };
   G.openPerkChoice = function () {
     const g = G.game;

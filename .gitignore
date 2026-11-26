@@ -1,0 +1,6 @@
+desktop/node_modules/
+desktop/dist/
+desktop/game/
+desktop/steam_appid.txt
+steam/sdk/output/
+_t/

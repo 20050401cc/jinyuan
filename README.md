@@ -4,6 +4,8 @@
 
 ## 怎么玩
 
+- **Windows 桌面版**：运行 `desktop/dist/Jinyuan-win32-x64/Jinyuan.exe`（打包方法和 Steam 上架见 [STEAM.md](STEAM.md)）。
+
 - **开始界面**：先选「电脑端」或「手机端」，下方会显示对应的操作方式，再点「开始远征」；暂停菜单里也能切换。
 - **本机**：双击 `烬渊.html`（或 `index.html`），用 Chrome / Edge / Firefox 打开。
 - **发给别的设备**：只需要 `烬渊.html` 这一个文件。它把全部代码打包在了一起，不依赖 `src/` 文件夹，也不需要网络。用微信、QQ、U 盘、网盘传过去，在对方设备的浏览器里打开即可。
@@ -25,6 +27,25 @@
 | M | 静音 |
 | F3 | 显示帧率和对象数量 |
 | R / 回车 | 结算画面立即重开 |
+
+### 手柄（Xbox / PlayStation / Steam Deck）
+
+| 按键 | 作用 |
+| --- | --- |
+| 左摇杆 | 移动 |
+| 右摇杆 | 瞄准（推到底同时射击） |
+| RT / RB | 射击（不推右摇杆时自动瞄准最近敌人） |
+| A / LT | 闪避 |
+| X | 拾取 / 开箱 / 购买 / 传送 |
+| Y / LB | 切换武器 |
+| Start | 暂停 |
+| 菜单中：十字键 / 左摇杆、A、B | 选择、确认、返回 |
+
+键盘也能操作全部菜单：方向键选择、回车确认、Esc 返回。F11 或 Alt+Enter 切换全屏。
+
+### 设置与成就
+
+主菜单右上角是「成就」和「设置」，暂停菜单里也能进设置。设置包括操作方式、主音量 / 音效 / 音乐、全屏、画面清晰度、屏幕震动、伤害数字、手柄震动、帧率显示。共 16 个成就，解锁时右上角会弹出提示。
 
 ### 触屏
 
@@ -71,7 +92,13 @@
 ```
 烬渊.html         打包好的单文件版本（由 build.py 生成，可单独分发）
 index.html        开发用入口页面，按顺序加载 src/ 下的脚本
-build.py          把 index.html 和 src/ 合并成 烬渊.html：python build.py
+build.py          把 index.html、src/ 和内嵌字体合并成 烬渊.html：python build.py
+STEAM.md          Steam 上架交付说明
+assets/fonts/     内嵌字体（思源黑体、马善政楷书裁剪版，SIL OFL 1.1）及授权
+desktop/          Windows 桌面版（Electron）：main.js 主进程、preload.js、pack.js 打包脚本
+steam/            商店图形、截图、成就图标与清单、SteamPipe 上传模板
+tools/fonts.py    按游戏用字裁剪字体
+tools/art.py      渲染商店图形、程序图标和成就图标（配合 tools/art.js）
 src/core.js       命名空间、数学工具、键鼠输入
 src/audio.js      Web Audio 合成音效与生成式背景音乐
 src/touch.js      触屏虚拟摇杆与按钮
@@ -85,7 +112,10 @@ src/enemies.js    普通敌人的数据与 AI
 src/bosses.js     三个 Boss 的阶段与弹幕招式
 src/sprites.js    玩家、敌人、Boss 的造型与动画
 src/perks.js      增益列表、增益选择、商店货架
-src/save.js       自动存档与读档、设置和战绩（浏览器本地存储）
+src/save.js       自动存档与读档、战绩（浏览器本地存储）
+src/settings.js   设置项、自适应分辨率与全屏、设置界面
+src/pad.js        手柄输入、菜单焦点导航（手柄 / 键盘）、震动
+src/achievements.js 成就定义、解锁提示、成就界面、Steam 同步接口
 src/render.js     世界渲染（物品、子弹、发光层、特效、氛围）
 src/ui.js         HUD、小地图、主菜单、暂停、增益选择、结算画面
 src/main.js       游戏状态机、换层、主循环

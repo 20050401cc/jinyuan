@@ -1,0 +1,17 @@
+﻿API Name,Display Name (zh),Description (zh),Icon,Icon Gray
+ACH_FIRST_BLOOD,初燃,击败第一个敌人,ACH_FIRST_BLOOD.jpg,ACH_FIRST_BLOOD_locked.jpg
+ACH_SLAYER_300,余烬收割者,累计击败 300 个敌人,ACH_SLAYER_300.jpg,ACH_SLAYER_300_locked.jpg
+ACH_BOSS_WARDEN,熔炉熄火,击败熔炉守卫,ACH_BOSS_WARDEN.jpg,ACH_BOSS_WARDEN_locked.jpg
+ACH_BOSS_WEAVER,断网,击败虚空织者,ACH_BOSS_WEAVER.jpg,ACH_BOSS_WEAVER_locked.jpg
+ACH_BOSS_HEART,渊心寂灭,击败烬渊之心，完成远征,ACH_BOSS_HEART.jpg,ACH_BOSS_HEART_locked.jpg
+ACH_UNTOUCHED,毫发无伤,不受任何伤害击败一位守护者,ACH_UNTOUCHED.jpg,ACH_UNTOUCHED_locked.jpg
+ACH_SPEEDRUN,疾行者,在 15 分钟内完成远征,ACH_SPEEDRUN.jpg,ACH_SPEEDRUN_locked.jpg
+ACH_ARSENAL,军械库,累计持有过全部 8 种武器,ACH_ARSENAL.jpg,ACH_ARSENAL_locked.jpg
+ACH_RICH,拾荒之王,同时持有 300 枚金币,ACH_RICH.jpg,ACH_RICH_locked.jpg
+ACH_SHOPPER,常客,在商店累计购买 10 次,ACH_SHOPPER.jpg,ACH_SHOPPER_locked.jpg
+ACH_CHESTS,寻宝人,累计打开 15 个宝箱,ACH_CHESTS.jpg,ACH_CHESTS_locked.jpg
+ACH_PERKS_5,博采众长,一次远征中获得 5 项增益,ACH_PERKS_5.jpg,ACH_PERKS_5_locked.jpg
+ACH_DASH_300,残影步,累计闪避 300 次,ACH_DASH_300.jpg,ACH_DASH_300_locked.jpg
+ACH_BLADE_BOSS,近身搏杀,用烬刃给守护者最后一击,ACH_BLADE_BOSS.jpg,ACH_BLADE_BOSS_locked.jpg
+ACH_FIRST_FALL,坠入余烬,第一次倒下,ACH_FIRST_FALL.jpg,ACH_FIRST_FALL_locked.jpg
+ACH_VETERAN,老兵,累计完成 3 次远征,ACH_VETERAN.jpg,ACH_VETERAN_locked.jpg

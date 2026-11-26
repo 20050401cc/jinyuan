@@ -7,12 +7,12 @@
     move: null, aim: null, aimAng: 0, mvx: 0, mvy: 0
   };
   const BTN = {
-    dash: { x: 690, y: 540, r: 36 },
-    use: { x: 690, y: 450, r: 30 },
-    pause: { x: 764, y: 34, r: 19 }
+    dash: { get x() { return G.W - 270; }, y: 540, r: 36 },
+    use: { get x() { return G.W - 270; }, y: 450, r: 30 },
+    pause: { get x() { return G.W - 196; }, y: 34, r: 19 }
   };
   const inBtn = (b, x, y) => Math.hypot(x - b.x, y - b.y) <= b.r + 8;
-  const inWeapons = (x, y) => x > 750 && y > 478;
+  const inWeapons = (x, y) => x > G.W - 210 && y > 478;
 
   G.initTouch = function (canvas) {
     const I = G.input;
@@ -107,7 +107,7 @@
     if (T.move) stick(ctx, T.move, '#3ff0da');
     else { ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(150, 400, 54, 0, TAU); ctx.stroke(); ctx.setLineDash([]); G.text(ctx, G.motion.status === 'ok' ? '倾斜移动' : '移动', 150, 400, 13, 'rgba(255,255,255,0.3)', 'center'); }
     if (T.aim) stick(ctx, T.aim, '#ffb05a');
-    else { ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(850, 400, 54, 0, TAU); ctx.stroke(); ctx.setLineDash([]); G.text(ctx, '射击', 850, 400, 13, 'rgba(255,255,255,0.3)', 'center'); }
+    else { ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(G.W - 110, 400, 54, 0, TAU); ctx.stroke(); ctx.setLineDash([]); G.text(ctx, '射击', G.W - 110, 400, 13, 'rgba(255,255,255,0.3)', 'center'); }
     button(ctx, BTN.dash, '闪', '#3ff0da', G.clamp(1 - p.dashCd / p.stats.dashCd, 0, 1));
     if (p.near) button(ctx, BTN.use, 'E', '#ffb05a', 1);
     const b = BTN.pause;

@@ -38,6 +38,7 @@
     g.runTime = 0; g.kills = 0; g.goldTotal = 0; g.dmgTaken = 0; g.dmgDealt = 0;
     g.perksTaken = []; g.perkChoices = [];
     G.startFloor(1);
+    G.ach.ev('weapon', 'pistol');
     g.state = 'play'; g.stateT = 0;
     G.input.down = false;
   };
@@ -49,6 +50,8 @@
     G.save.clear();
     G.save.record(win, g.floor);
     G.sfx(win ? 'win' : 'death');
+    G.ach.ev(win ? 'win' : 'death');
+    if (!win) G.rumble(1, 1, 450);
     g.stateT = 0;
     if (!win) { G.burst(g.player.x, g.player.y, '#35d0bd', 30, 260, 0.8, 4); g.shake = 16; }
   };
@@ -74,39 +77,51 @@
 
   G.update = function (dt) {
     const I = G.input;
+    G.updatePad(dt);
     G.updateMotion();
     G.updateTouch();
     g.time += dt; g.stateT += dt;
     if (g.dungeon) G.prebake(g.dungeon);
     if (g.fade > 0 && g.state !== 'perk') g.fade = Math.max(0, g.fade - dt * 1.6);
     if (I.pressed.KeyM) G.audio.muted = !G.audio.muted;
-    if (I.pressed.F3) G.debug.fps = !G.debug.fps;
+    if (I.pressed.F3) { G.settings.fps = G.debug.fps = !G.debug.fps; G.saveSettings(); }
+    G.ach.tick(dt);
     if ((g.cfgT = (g.cfgT || 0) + dt) > 1) { g.cfgT = 0; G.save.syncCfg(); }
     switch (g.state) {
       case 'menu':
-        if (I.pressed.Enter) { if (!(G.save.meta && G.save.resume())) G.newRun(); }
+        break;
+      case 'settings':
+      case 'ach':
+        if (I.pressed.Escape || G.nav.back) G.closeSub();
         break;
       case 'play':
         if (I.pressed.Escape || I.pressed.KeyP) { g.state = 'pause'; g.stateT = 0; G.save.write(); break; }
         updatePlay(dt);
         break;
       case 'pause':
-        if (I.pressed.Escape || I.pressed.KeyP) g.state = 'play';
+        if (I.pressed.Escape || I.pressed.KeyP || G.nav.back) g.state = 'play';
         break;
       case 'dead':
       case 'win':
         G.updateFx(dt);
         g.shake *= Math.pow(0.0015, dt);
-        if (g.stateT > 0.5 && (I.pressed.KeyR || I.pressed.Enter)) G.newRun();
+        if (g.stateT > 0.5 && I.pressed.KeyR) G.newRun();
         break;
     }
   };
 
   let ctx = null;
   G.draw = function () {
+    G.navBeginFrame();
+    ctx.setTransform(G.pxk, 0, 0, G.pxk, 0, 0);
     G.motion.rect = null;
-    if (g.state === 'menu') { G.drawMenu(ctx); G.warm(ctx); }
-    else {
+    const sub = g.state === 'settings' || g.state === 'ach';
+    if (g.state === 'menu' || (sub && g.back === 'menu')) {
+      if (g.state === 'menu') G.drawMenu(ctx);
+      else if (g.state === 'settings') G.drawSettings(ctx);
+      else G.drawAchievements(ctx);
+      G.warm(ctx);
+    } else {
       G.drawWorld(ctx);
       G.drawHUD(ctx);
       G.drawTouch(ctx);
@@ -115,8 +130,11 @@
       else if (g.state === 'perk') G.drawPerk(ctx);
       else if (g.state === 'dead') G.drawEnd(ctx, false);
       else if (g.state === 'win') G.drawEnd(ctx, true);
+      else if (g.state === 'settings') G.drawSettings(ctx);
+      else if (g.state === 'ach') G.drawAchievements(ctx);
     }
-    if (!G.touch.on) G.drawCursor(ctx);
+    G.ach.drawToasts(ctx);
+    if (!G.touch.on && !(G.pad.active && g.state !== 'play')) G.drawCursor(ctx);
     G.drawRotateHint(ctx);
   };
 
@@ -124,24 +142,23 @@
   G.tick = function (dt) {
     G.update(dt);
     G.draw();
+    G.navEndFrame();
     G.endFrameInput();
   };
-
-  function fit(canvas) {
-    const s = Math.min(window.innerWidth / G.W, window.innerHeight / G.H);
-    canvas.style.width = Math.floor(G.W * s) + 'px';
-    canvas.style.height = Math.floor(G.H * s) + 'px';
-  }
 
   window.addEventListener('load', () => {
     const canvas = document.getElementById('game');
     ctx = canvas.getContext('2d');
+    if (document.fonts) for (const f of ['16px "JY Sans"', 'bold 16px "JY Sans"', '16px "JY Brush"']) document.fonts.load(f).catch(() => {});
     G.initInput(canvas);
     G.initTouch(canvas);
     G.initMotion(canvas);
     G.save.init();
-    fit(canvas);
-    window.addEventListener('resize', () => fit(canvas));
+    G.initSettings();
+    G.ach.init();
+    G.fit(canvas);
+    window.addEventListener('resize', () => G.fit());
+    window.addEventListener('blur', () => { if (g.state === 'play') { g.state = 'pause'; g.stateT = 0; } });
     document.addEventListener('visibilitychange', () => { if (document.hidden && g.state === 'play') g.state = 'pause'; });
     let last = performance.now();
     G.fps = 60;

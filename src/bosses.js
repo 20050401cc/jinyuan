@@ -226,11 +226,14 @@
     e.phase = 0; e.rest = 0.8; e.atk = null; e.lastAtk = null; e.tele = 0; e.alpha = 1; e.aimA = 0;
     e.at = 0; e.acc = 0; e.acc2 = 0; e.n = 0; e.spinDir = 1;
     g.boss = e;
+    g.dmgAtBoss = g.dmgTaken;
     g.banner = { text: e.def.name, t: 2.2 };
     G.sfx('phase');
   };
 
   G.onBossDeath = function (e) {
+    G.ach.ev('boss', e);
+    G.rumble(1, 1, 600);
     const g = G.game, room = g.active || g.room;
     g.boss = null;
     g.ebullets.length = 0;

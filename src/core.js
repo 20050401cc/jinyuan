@@ -1,7 +1,8 @@
 // 核心：命名空间、数学工具、键鼠输入
 'use strict';
 (function () {
-  const G = window.G = { W: 960, H: 600, TILE: 32, debug: { god: false, fps: false } };
+  const G = window.G = { W: 960, H: 600, TILE: 32, pxk: 1, debug: { god: false, fps: false } };
+  G.resetHooks = [];
 
   G.rand = (a, b) => a + Math.random() * (b - a);
   G.randi = (a, b) => Math.floor(a + Math.random() * (b - a + 1));
@@ -41,15 +42,22 @@
       const k = e.code;
       if (!input.keys[k]) input.pressed[k] = true;
       input.keys[k] = true;
-      if (k === 'Space' || k === 'Tab' || k.indexOf('Arrow') === 0) e.preventDefault();
+      if (k === 'Space' || k === 'Tab' || k.indexOf('Arrow') === 0 || k === 'F11') e.preventDefault();
+      if (G.pad) G.pad.active = false;
+      if (G.settings && G.settings.inputMode === 'pad' && G.game.state === 'play') G.setInputMode('pc');
+      if (k === 'F11' || (k === 'Enter' && e.altKey)) { G.setFullscreen(!G.isFullscreen()); input.pressed.Enter = false; }
       G.audio.unlock();
     });
     window.addEventListener('keyup', e => { input.keys[e.code] = false; });
     window.addEventListener('blur', () => { input.keys = {}; input.down = false; });
-    window.addEventListener('mousemove', setMouse);
+    window.addEventListener('mousemove', e => {
+      setMouse(e);
+      if (Math.abs(e.movementX) + Math.abs(e.movementY) > 2) { if (G.nav) G.nav.active = false; if (G.pad) G.pad.active = false; }
+    });
     canvas.addEventListener('mousedown', e => {
       setMouse(e);
       if (e.button === 0) { input.down = true; input.clicked = true; }
+      if (G.nav) G.nav.active = false;
       G.audio.unlock();
     });
     window.addEventListener('mouseup', e => { if (e.button === 0) input.down = false; });

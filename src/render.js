@@ -4,8 +4,9 @@
   const G = window.G;
   const TAU = Math.PI * 2, OUT = '#140e14';
 
-  G.FONT = '"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
-  G.FONT_T = '"STXingkai","华文行楷","STKaiti","KaiTi","楷体",' + G.FONT;
+  // 内嵌的开源字体（思源黑体 / 马善政楷书裁剪版），系统字体作后备
+  G.FONT = '"JY Sans","Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
+  G.FONT_T = '"JY Brush","STXingkai","KaiTi",' + G.FONT;
   G.text = function (ctx, str, x, y, size, color, align, bold, title) {
     ctx.font = (bold ? 'bold ' : '') + size + 'px ' + (title ? G.FONT_T : G.FONT);
     ctx.textAlign = align || 'left';
@@ -23,6 +24,7 @@
   };
 
   let vignette = null, redVig = null;
+  G.resetHooks.push(() => { vignette = redVig = null; });
   function vig(inner, outer, color) {
     const c = G.mkCanvas(G.W, G.H), x = c.getContext('2d');
     const gr = x.createRadialGradient(G.W / 2, G.H / 2, inner, G.W / 2, G.H / 2, outer);
@@ -278,7 +280,7 @@
   G.drawWorld = function (ctx) {
     const g = G.game, th = G.theme(), p = g.player;
     ctx.fillStyle = th.void; ctx.fillRect(0, 0, G.W, G.H);
-    const sx = g.shake > 0.3 ? G.rand(-g.shake, g.shake) : 0, sy = g.shake > 0.3 ? G.rand(-g.shake, g.shake) : 0;
+    const sh = g.shake * G.settings.shake, sx = sh > 0.3 ? G.rand(-sh, sh) : 0, sy = sh > 0.3 ? G.rand(-sh, sh) : 0;
     const ox = Math.round(-g.cam.x + sx), oy = Math.round(-g.cam.y + sy);
     ctx.save();
     ctx.translate(ox, oy);
@@ -299,8 +301,8 @@
     ctx.translate(ox, oy);
     if (g.floor === 1) {
       const r = g.dungeon.start;
-      G.text(ctx, G.motion.status === 'ok' ? '倾斜设备移动 · 右半屏拖动瞄准射击' : G.touch.on ? '左半屏拖动移动 · 右半屏拖动瞄准射击' : 'WASD 移动 · 鼠标瞄准 · 左键射击', r.cx, r.cy - 96, 14, 'rgba(255,236,210,0.5)', 'center');
-      G.text(ctx, G.motion.status === 'ok' ? '甩动或「闪」闪避 · 点武器栏换枪 · 「E」互动' : G.touch.on ? '「闪」闪避 · 点武器栏换枪 · 「E」互动' : '空格 闪避 · Q 切换武器 · E 互动', r.cx, r.cy + 100, 14, 'rgba(255,236,210,0.5)', 'center');
+      G.text(ctx, G.controlHints()[0], r.cx, r.cy - 96, 14, 'rgba(255,236,210,0.5)', 'center');
+      G.text(ctx, G.controlHints()[1], r.cx, r.cy + 100, 14, 'rgba(255,236,210,0.5)', 'center');
     }
     drawGlowLayer(ctx, g, th);
     drawEnemyOverlays(ctx, g);

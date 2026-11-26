@@ -108,6 +108,7 @@
     G.stain(x, y, rad * 0.5, '#050304', 0.4);
     g.shake = Math.max(g.shake, 7);
     G.sfx('boom');
+    G.rumble(0.45, 0.3, 140);
     if (friendly) {
       for (const e of g.enemies.slice()) {
         if (e.spawnT > 0 || e.dead) continue;

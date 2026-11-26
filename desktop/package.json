@@ -1,0 +1,16 @@
+{
+  "name": "jinyuan",
+  "productName": "烬渊",
+  "version": "1.0.0",
+  "description": "烬渊 —— 原创俯视角地牢肉鸽射击游戏",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pack": "node pack.js"
+  },
+  "devDependencies": {
+    "@electron/packager": "^18.3.6",
+    "electron": "^38.0.0"
+  }
+}

@@ -395,6 +395,7 @@
 
   // ---------- 光照：半分辨率暗幕上挖出光斑 ----------
   let lightC = null, lightX = null, mask = null;
+  G.resetHooks.push(() => { lightC = null; });
   const masks = {};
   G.drawLighting = function (ctx, g, th) {
     if (!lightC) {

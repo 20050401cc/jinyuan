@@ -1,0 +1,21 @@
+"AppBuild"
+{
+	"AppID" "替换为你的AppID"
+	"Desc" "Jinyuan 1.0.0"
+	"ContentRoot" "..\..\desktop\dist\Jinyuan-win32-x64\"
+	"BuildOutput" "output\"
+	"SetLive" ""
+	"Depots"
+	{
+		"替换为你的DepotID"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+			"FileExclusion" "steam_appid.txt"
+		}
+	}
+}

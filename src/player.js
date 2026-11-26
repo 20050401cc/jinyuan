@@ -26,6 +26,7 @@
     let ml = Math.hypot(mx, my);
     if (ml) { mx /= ml; my /= ml; }
     if (G.touch.mvx || G.touch.mvy) { mx = G.touch.mvx; my = G.touch.mvy; ml = 1; }
+    if (G.pad.mvx || G.pad.mvy) { mx = G.pad.mvx; my = G.pad.mvy; ml = 1; }
 
     p.dashCd -= dt; p.invuln -= dt; p.cd -= dt; p.emptyT -= dt; p.hurtFlash -= dt;
     p.recoil = Math.max(0, p.recoil - dt * 8);
@@ -46,6 +47,7 @@
         p.dashT = 0.17; p.dvx = dx * 640; p.dvy = dy * 640;
         p.dashCd = s.dashCd; p.invuln = Math.max(p.invuln, 0.24);
         G.sfx('dash');
+        G.ach.ev('dash');
         for (let i = 0; i < 5; i++) g.effects.push({ type: 'dust', x: p.x + G.rand(-8, 8), y: p.y + 8 + G.rand(-4, 4), t: 0, dur: 0.4 });
       } else if (ml) {
         const sp = 195 * s.speed;
@@ -84,6 +86,7 @@
     if (g.state !== 'play' || p.invuln > 0 || p.dashT > 0 || G.debug.god) return;
     dmg = Math.round(dmg);
     g.dmgTaken += dmg;
+    G.rumble(0.7, 0.9, 160);
     const abs = Math.min(p.shield, dmg);
     p.shield -= abs;
     p.hp -= dmg - abs;
@@ -114,6 +117,7 @@
     }
     p.cd = 0.2;
     G.sfx('pick');
+    G.ach.ev('weapon', p.weapons[p.cur]);
     G.floatText(p.x, p.y - 26, G.WEAPONS[p.weapons[p.cur]].name, '#fff', 14);
   };
 
@@ -128,11 +132,13 @@
     if (it.price) {
       if (p.gold < it.price) { G.floatText(p.x, p.y - 22, '金币不足', '#ffcf6b'); G.sfx('empty'); return; }
       p.gold -= it.price;
+      G.ach.ev('buy');
     }
     if (it.kind === 'weapon') {
       G.takeWeapon(it);
     } else if (it.kind === 'chest') {
       it.opened = true;
+      G.ach.ev('chest');
       G.sfx('pick');
       G.burst(it.x, it.y, '#ffd86b', 18, 200, 0.5, 3);
       g.items.push({ kind: 'weapon', wid: G.randomWeapon(), x: it.x, y: it.y + 40, price: 0 });
