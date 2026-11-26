@@ -45,8 +45,13 @@
     if (!perk) return;
     G.applyPerk(perk);
     G.sfx('perk');
+    const cleared = g.floor;
     G.startFloor(g.floor + 1);
-    g.state = 'play';
+    // 层间幕间剧情，播完（或跳过）后从新楼层的标题卡开始
+    G.playStory('ch' + cleared, () => {
+      g.state = 'play'; g.stateT = 0; g.fade = 1;
+      g.floorCard = { t: 0, n: g.floor }; g.player.dropT = 0.85; g.player.invuln = 1.4;
+    });
   };
 
   // 给宝箱房和商店摆放物品

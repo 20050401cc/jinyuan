@@ -5,7 +5,8 @@ const path = require('path');
 const fs = require('fs');
 
 // 存档和设置固定放在 %APPDATA%/Jinyuan，便于配置 Steam 云存档
-app.setPath('userData', path.join(app.getPath('appData'), 'Jinyuan'));
+// 自检模式使用独立的数据目录，不碰玩家存档
+app.setPath('userData', path.join(app.getPath('appData'), process.env.JY_SMOKE ? 'Jinyuan-smoke' : 'Jinyuan'));
 
 // ---------- Steamworks（可选） ----------
 // 拿到 Steam App ID 后：在本目录 `npm i steamworks.js`，并在 steam_appid.txt 里写入 App ID。
@@ -79,11 +80,14 @@ function smoke() {
     const run = js => win.webContents.executeJavaScript(js);
     try {
       await wait(1500);
-      const r = await run(`(() => ({ hasGame: typeof G === 'object', desktop: !!G.desktop, W: G.W, pxk: G.pxk, version: G.VERSION,
+      const r = await run(`(() => ({ hasGame: typeof G === 'object', desktop: !!G.desktop, W: G.W, pxk: G.pxk, version: G.VERSION, menuFps: Math.round(G.fps),
         sans: document.fonts.check('16px "JY Sans"'), brush: document.fonts.check('16px "JY Brush"'), state: G.game.state }))()`);
       await run('G.newRun(); G.debug.god = true; true');
       await wait(2500);
-      r.afterStart = await run('({ state: G.game.state, floor: G.game.floor, fps: Math.round(G.fps) })');
+      r.afterStart = await run('({ state: G.game.state, floor: G.game.floor, fps: Math.round(G.fps), lang: G.lang })');
+      await run('G.setLang("en"); true');
+      await wait(3000);
+      r.storyEn = await run('({ state: G.game.state, fps: Math.round(G.fps), title: G.tr(G.STORY.prologue.title) })');
       await run('G.ach.unlock("first_blood"); G.setFullscreen(true); true');
       await wait(800);
       r.fullscreenOn = win.isFullScreen();

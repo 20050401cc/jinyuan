@@ -52,6 +52,7 @@
     window.addEventListener('blur', () => { input.keys = {}; input.down = false; });
     window.addEventListener('mousemove', e => {
       setMouse(e);
+      input.moveT = performance.now();
       if (Math.abs(e.movementX) + Math.abs(e.movementY) > 2) { if (G.nav) G.nav.active = false; if (G.pad) G.pad.active = false; }
     });
     canvas.addEventListener('mousedown', e => {

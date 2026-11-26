@@ -88,7 +88,7 @@
       G.ui.panel(ctx, x, y, w, h, o.a.color, 0.92);
       badge(ctx, x + 32, y + h / 2, 20, o.a, true);
       G.text(ctx, '成就解锁', x + 62, y + 18, 11, '#ffb05a', 'left', true);
-      G.text(ctx, o.a.name, x + 62, y + 38, 16, '#fff', 'left', true);
+      G.text(ctx, o.a.name, x + 62, y + 38, 16, '#fff', 'left', true, false, w - 74);
       ctx.globalAlpha = 1;
     });
   };
@@ -110,13 +110,13 @@
     U.glowText(ctx, '成 就', G.W / 2, 56, 34, '#ffe9c8', '#ff9d4a', true);
     G.text(ctx, A.count() + ' / ' + LIST.length, G.W / 2, 86, 13, '#c8b0a0', 'center', true);
     const s = A.stats;
-    G.text(ctx, '累计击败 ' + s.kills + ' · 开箱 ' + s.chests + ' · 购买 ' + s.buys + ' · 闪避 ' + s.dashes + ' · 武器 ' + s.weapons.length + '/' + G.WEAPON_IDS.length, G.W / 2, 104, 11, '#8a8088', 'center');
+    G.text(ctx, G.tf('累计击败 {0} · 开箱 {1} · 购买 {2} · 闪避 {3} · 武器 {4}/{5}', s.kills, s.chests, s.buys, s.dashes, s.weapons.length, G.WEAPON_IDS.length), G.W / 2, 104, 11, '#8a8088', 'center');
     LIST.forEach((a, i) => {
       const col = i % 2, row = Math.floor(i / 2), x = x0 + 24 + col * 412, y = 120 + row * 50, on = !!A.unlocked[a.id];
       ctx.fillStyle = on ? 'rgba(255,176,90,0.07)' : 'rgba(255,255,255,0.025)'; U.rr(ctx, x, y, 400, 44, 6); ctx.fill();
       badge(ctx, x + 24, y + 22, 16, a, on);
-      G.text(ctx, a.name, x + 50, y + 14, 14, on ? '#fff' : '#8a8088', 'left', true);
-      G.text(ctx, a.desc, x + 50, y + 32, 11, on ? '#c8bcc0' : '#6a6470', 'left');
+      G.text(ctx, a.name, x + 50, y + 14, 14, on ? '#fff' : '#8a8088', 'left', true, false, 320);
+      G.text(ctx, a.desc, x + 50, y + 32, 11, on ? '#c8bcc0' : '#6a6470', 'left', false, false, 320);
       if (on) G.text(ctx, '✓', x + 382, y + 22, 16, a.color, 'center', true);
     });
     if (G.button(ctx, G.W / 2 - 100, 524, 200, 42, '返回', true)) G.closeSub();

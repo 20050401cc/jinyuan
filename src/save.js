@@ -88,7 +88,7 @@
       g.room = G.roomAt(p.x, p.y, 0) || d.start;
       g.cam.x = p.x - G.W / 2; g.cam.y = p.y - G.H / 2;
       G.prebakeNear(d, p.x, p.y);
-      g.banner = { text: '继续远征 · 第 ' + g.floor + ' 层', t: 2.2 };
+      g.banner = { text: G.tf('继续远征 · 第 {0} 层', g.floor), t: 2.2 };
       g.state = 'play'; g.stateT = 0;
       G.input.down = false;
       S.timer = 0;

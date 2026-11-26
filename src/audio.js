@@ -121,7 +121,7 @@
 
   function mode() {
     const g = G.game;
-    if (!g || g.state === 'menu') return 'menu';
+    if (!g || g.state === 'menu' || g.state === 'story' || g.state === 'gallery') return 'menu';
     if (g.state === 'dead' || g.state === 'win') return 'end';
     if (g.boss) return 'boss';
     if (g.active) return 'combat';

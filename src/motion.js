@@ -89,7 +89,7 @@
     if (ctx.roundRect) ctx.roundRect(x, y, w, h, 6); else ctx.rect(x, y, w, h);
     ctx.fill();
     ctx.strokeStyle = on ? '#3ff0da' : bad ? '#ff8a8a' : 'rgba(255,255,255,0.22)'; ctx.lineWidth = on ? 2 : 1; ctx.stroke();
-    G.text(ctx, LABEL[M.status], x + w / 2, y + h / 2 + 0.5, 14, on ? '#bff8ef' : bad ? '#ffb0b0' : '#e0d6e0', 'center', true);
+    G.text(ctx, LABEL[M.status], x + w / 2, y + h / 2 + 0.5, 14, on ? '#bff8ef' : bad ? '#ffb0b0' : '#e0d6e0', 'center', true, false, w - 16);
     M.rect = { x, y, w, h };
   };
 

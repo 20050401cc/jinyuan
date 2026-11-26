@@ -157,12 +157,12 @@
   };
 
   G.itemLabel = function (it) {
-    const price = it.price ? '（' + it.price + ' 金币）' : '';
-    if (it.kind === 'weapon') return (it.price ? '购买 ' : '拾取 ') + G.WEAPONS[it.wid].name + price;
-    if (it.kind === 'chest') return '打开宝箱';
-    if (it.kind === 'portal') return '进入传送门';
-    if (it.item === 'heal') return '购买 生命药剂' + price;
-    if (it.item === 'energy') return '购买 能量电池' + price;
-    return '购买 ' + it.perk.name + price;
+    const price = it.price ? G.tf('（{0} 金币）', it.price) : '';
+    if (it.kind === 'weapon') return G.tf(it.price ? '购买 {0}' : '拾取 {0}', G.tr(G.WEAPONS[it.wid].name)) + price;
+    if (it.kind === 'chest') return G.tr('打开宝箱');
+    if (it.kind === 'portal') return G.tr('进入传送门');
+    if (it.item === 'heal') return G.tf('购买 {0}', G.tr('生命药剂')) + price;
+    if (it.item === 'energy') return G.tf('购买 {0}', G.tr('能量电池')) + price;
+    return G.tf('购买 {0}', G.tr(it.perk.name)) + price;
   };
 })();

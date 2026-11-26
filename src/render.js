@@ -4,11 +4,18 @@
   const G = window.G;
   const TAU = Math.PI * 2, OUT = '#140e14';
 
-  // 内嵌的开源字体（思源黑体 / 马善政楷书裁剪版），系统字体作后备
-  G.FONT = '"JY Sans","Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
-  G.FONT_T = '"JY Brush","STXingkai","KaiTi",' + G.FONT;
-  G.text = function (ctx, str, x, y, size, color, align, bold, title) {
-    ctx.font = (bold ? 'bold ' : '') + size + 'px ' + (title ? G.FONT_T : G.FONT);
+  // 字体见 i18n.js；maxW 给定时超宽的文字会自动缩小字号
+  G.setFont = function (ctx, str, size, bold, title, maxW) {
+    const wt = title && G.lang !== 'zh' ? '900 ' : bold ? 'bold ' : '', fam = title ? G.FONT_T : G.FONT;
+    ctx.font = wt + size + 'px ' + fam;
+    if (maxW) {
+      const w = ctx.measureText(str).width;
+      if (w > maxW) ctx.font = wt + Math.max(7, size * maxW / w).toFixed(1) + 'px ' + fam;
+    }
+  };
+  G.text = function (ctx, str, x, y, size, color, align, bold, title, maxW) {
+    str = G.tr(str);
+    G.setFont(ctx, str, size, bold, title, maxW);
     ctx.textAlign = align || 'left';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = color;
@@ -16,6 +23,7 @@
   };
   // 带深色描边的文字（世界内飘字、提示）
   G.textO = function (ctx, str, x, y, size, color, align) {
+    str = G.tr(str);
     ctx.font = 'bold ' + size + 'px ' + G.FONT;
     ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,6,10,0.85)'; ctx.lineJoin = 'round';
@@ -244,6 +252,7 @@
     ctx.globalAlpha = 1;
     for (const e of g.effects) {
       const k = e.t / e.dur;
+      if (k < 0) continue;
       if (e.type === 'boom') {
         ctx.globalCompositeOperation = 'lighter';
         G.glow(ctx, e.color, e.x, e.y, e.rad * (0.7 + k * 0.9), (1 - k) * 0.9);
@@ -291,8 +300,15 @@
     drawItems(ctx, g, th);
     drawPickups(ctx, g);
     drawEnemies(ctx, g);
-    shadow(ctx, p.x, p.y + 11, 11);
-    if (!(p.invuln > 0 && p.dashT <= 0 && Math.sin(g.time * 40) > 0) || g.state !== 'play') { if (g.state !== 'dead') G.drawPlayerSprite(ctx, p, g); }
+    // 新楼层：旅人从光柱中落下
+    const drop = p.dropT > 0 ? Math.pow(p.dropT / 0.85, 2) * 320 : 0;
+    shadow(ctx, p.x, p.y + 11, 11 * (1 - drop / 640));
+    const blink = p.invuln > 0 && p.invuln < 50 && p.dashT <= 0 && !drop && Math.sin(g.time * 40) > 0;
+    if ((!blink || g.state !== 'play') && g.state !== 'dead') {
+      if (g.dying > 0) ctx.globalAlpha = 0.4 + 0.6 * (g.dying / 1.3);
+      ctx.save(); ctx.translate(0, -drop); G.drawPlayerSprite(ctx, p, g); ctx.restore();
+      ctx.globalAlpha = 1;
+    }
     ctx.restore();
 
     G.drawLighting(ctx, g, th);
@@ -305,6 +321,12 @@
       G.text(ctx, G.controlHints()[1], r.cx, r.cy + 100, 14, 'rgba(255,236,210,0.5)', 'center');
     }
     drawGlowLayer(ctx, g, th);
+    if (p.dropT > 0) {
+      const k = p.dropT / 0.85, lg = ctx.createLinearGradient(0, p.y - 600, 0, p.y + 20);
+      lg.addColorStop(0, 'rgba(255,226,184,0)'); lg.addColorStop(1, 'rgba(255,226,184,' + (0.45 * k).toFixed(3) + ')');
+      ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = lg; ctx.fillRect(p.x - 22 * k - 6, p.y - 600, 44 * k + 12, 620);
+      G.glow(ctx, '#ffe2b8', p.x, p.y, 60, 0.5 * k); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    }
     drawEnemyOverlays(ctx, g);
     drawBullets(ctx, g);
     drawFx(ctx, g);
@@ -318,6 +340,12 @@
       ctx.globalAlpha = (0.3 - low) / 0.3 * (0.55 + Math.sin(g.time * 6) * 0.25);
       ctx.drawImage(redVig || (redVig = vig(200, 560, '200,20,40')), 0, 0);
       ctx.globalAlpha = 1;
+    }
+    // 倒下时画面逐渐褪色
+    const ds = g.dying > 0 ? 1 - g.dying / 1.3 : g.state === 'dead' ? 1 : 0;
+    if (ds > 0) {
+      ctx.globalCompositeOperation = 'saturation'; ctx.fillStyle = 'rgba(128,128,128,' + (ds * 0.9).toFixed(3) + ')'; ctx.fillRect(0, 0, G.W, G.H);
+      ctx.globalCompositeOperation = 'source-over';
     }
     if (p.hurtFlash > 0) {
       ctx.fillStyle = 'rgba(255,40,60,' + (p.hurtFlash * 0.8).toFixed(3) + ')';

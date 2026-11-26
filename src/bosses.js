@@ -17,6 +17,8 @@
     if (ph !== e.phase) {
       e.phase = ph; e.atk = null; e.rest = 1.0; e.tele = 0; e.alpha = 1;
       g.banner = { text: ph === 1 ? '第二阶段' : '最终阶段', t: 1.4, small: true };
+      const L = G.BOSS_LINES[e.type];
+      if (L) G.say(L.phase[ph - 1]);
       g.shake = 12;
       G.sfx('phase');
       G.burst(e.x, e.y, def.color, 30, 300, 0.6, 4);
@@ -227,7 +229,8 @@
     e.at = 0; e.acc = 0; e.acc2 = 0; e.n = 0; e.spinDir = 1;
     g.boss = e;
     g.dmgAtBoss = g.dmgTaken;
-    g.banner = { text: e.def.name, t: 2.2 };
+    g.banner = null;
+    G.bossIntro(e);
     G.sfx('phase');
   };
 
@@ -240,7 +243,11 @@
     for (const o of g.enemies) if (o !== e && !o.dead) { o.dead = true; G.burst(o.x, o.y, o.def.color, 8, 160, 0.4, 3); }
     g.shake = 18;
     G.sfx('boom');
+    // 击破演出：慢动作、白闪、三重冲击波
+    g.slow = { t: 1.2, k: 0.22 }; g.flash = 0.85; g.sub = null;
     g.effects.push({ type: 'boom', x: e.x, y: e.y, rad: 160, t: 0, dur: 0.6, color: e.def.color });
+    for (let i = 0; i < 3; i++) g.effects.push({ type: 'ring', x: e.x, y: e.y, rad: 160 + i * 110, t: -i * 0.12, dur: 0.8 + i * 0.15, color: i === 1 ? '#ffffff' : e.def.color });
+    G.burst(e.x, e.y, '#ffffff', 30, 420, 0.9, 3);
     for (let i = 0; i < 24; i++) G.dropPickup('coin', e.x, e.y, 2);
     for (let i = 0; i < 5; i++) G.dropPickup('energy', e.x, e.y, 15);
     G.dropPickup('health', e.x, e.y, 30);

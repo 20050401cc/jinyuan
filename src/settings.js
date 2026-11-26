@@ -3,11 +3,11 @@
 (function () {
   const G = window.G;
   const KEY = 'jinyuan.settings.v1';
-  G.VERSION = '1.0.0';
+  G.VERSION = '1.1.0';
   G.desktop = window.jinyuanDesktop || null; // 桌面版（Electron）注入的接口
 
   const DEF = {
-    inputMode: 'auto', master: 0.8, sfx: 0.8, music: 0.6,
+    lang: '', story: 'first', inputMode: 'auto', master: 0.8, sfx: 0.8, music: 0.6,
     fullscreen: true, hires: true, shake: 1, dmgNum: true, rumble: true, fps: false
   };
   const S = G.settings = Object.assign({}, DEF);
@@ -20,6 +20,8 @@
       const c = JSON.parse(localStorage.getItem(KEY));
       if (c) for (const k in DEF) if (typeof c[k] === typeof DEF[k]) S[k] = c[k];
     } catch (e) { /* 损坏时用默认值 */ }
+    if (!S.lang) S.lang = G.detectLang();
+    G.setLang(S.lang);
     if (S.inputMode === 'auto') S.inputMode = G.touch.on ? 'touch' : 'pc';
     if (G.desktop && G.desktop.isFullscreen) S.fullscreen = !!G.desktop.isFullscreen();
     G.applySettings();
@@ -78,7 +80,10 @@
   const VOL = v => G.clamp(Math.round((v + 0.0001) * 10) / 10, 0, 1);
   const MODES = ['pc', 'touch', 'pad'], MODE_NAME = { pc: '键盘 + 鼠标', touch: '触屏', pad: '手柄' };
   const SHAKES = [0, 0.5, 1], SHAKE_NAME = ['关', '弱', '标准'];
+  const STORY = ['first', 'always', 'off'], STORY_NAME = { first: '仅首次', always: '每次', off: '关闭' };
   const ROWS = [
+    { label: '语言 / Language', get: () => G.langName(), step: d => G.cycleLang(d) },
+    { label: '剧情过场', get: () => STORY_NAME[S.story] || '仅首次', step: d => { S.story = STORY[(Math.max(0, STORY.indexOf(S.story)) + d + 3) % 3]; } },
     { label: '操作方式', get: () => MODE_NAME[S.inputMode], step: d => G.setInputMode(MODES[(MODES.indexOf(S.inputMode) + d + 3) % 3]) },
     { label: '主音量', get: () => pct(S.master), step: d => { S.master = VOL(S.master + d * 0.1); G.applyAudio(); G.sfx('ui'); } },
     { label: '音效音量', get: () => pct(S.sfx), step: d => { S.sfx = VOL(S.sfx + d * 0.1); G.applyAudio(); G.sfx('coin'); } },
@@ -95,32 +100,32 @@
     const g = G.game, U = G.ui, I = G.input, w = 600, x0 = (G.W - w) / 2;
     if (g.back === 'menu') G.drawMenuBackdrop(ctx);
     ctx.fillStyle = 'rgba(7,4,9,0.78)'; ctx.fillRect(0, 0, G.W, G.H);
-    U.panel(ctx, x0, 28, w, 548, '#ff9d4a', 0.92);
-    U.glowText(ctx, '设 置', G.W / 2, 66, 36, '#ffe9c8', '#ff9d4a', true);
-    U.divider(ctx, G.W / 2, 94, 120, '#ff9d4a');
+    U.panel(ctx, x0, 18, w, 570, '#ff9d4a', 0.92);
+    U.glowText(ctx, '设 置', G.W / 2, 54, 34, '#ffe9c8', '#ff9d4a', true);
+    U.divider(ctx, G.W / 2, 80, 120, '#ff9d4a');
     ROWS.forEach((r, i) => {
-      const y = 108 + i * 38, it = G.uiItem(x0 + 24, y, w - 48, 34, { lr: true, primary: i === 0 });
-      if (it.hover) { ctx.fillStyle = 'rgba(255,176,90,0.12)'; U.rr(ctx, x0 + 24, y, w - 48, 34, 6); ctx.fill(); ctx.strokeStyle = 'rgba(255,176,90,0.6)'; ctx.lineWidth = 1; ctx.stroke(); }
-      G.text(ctx, r.label, x0 + 44, y + 17.5, 15, it.hover ? '#fff' : '#d8ccd4', 'left', true);
+      const y = 92 + i * 34, it = G.uiItem(x0 + 24, y, w - 48, 31, { lr: true, primary: i === 0 });
+      if (it.hover) { ctx.fillStyle = 'rgba(255,176,90,0.12)'; U.rr(ctx, x0 + 24, y, w - 48, 31, 6); ctx.fill(); ctx.strokeStyle = 'rgba(255,176,90,0.6)'; ctx.lineWidth = 1; ctx.stroke(); }
+      G.text(ctx, r.label, x0 + 44, y + 16, 15, it.hover ? '#fff' : '#d8ccd4', 'left', true, false, 240);
       const vx = x0 + w - 150;
-      G.text(ctx, '◀', vx - 92, y + 17.5, 13, it.hover ? '#ffb05a' : '#6a6070', 'center');
-      G.text(ctx, r.get(), vx, y + 17.5, 15, '#ffe9c8', 'center', true);
-      G.text(ctx, '▶', vx + 92, y + 17.5, 13, it.hover ? '#ffb05a' : '#6a6070', 'center');
+      G.text(ctx, '◀', vx - 92, y + 16, 13, it.hover ? '#ffb05a' : '#6a6070', 'center');
+      G.text(ctx, r.get(), vx, y + 16, 15, '#ffe9c8', 'center', true, false, 160);
+      G.text(ctx, '▶', vx + 92, y + 16, 13, it.hover ? '#ffb05a' : '#6a6070', 'center');
       if (r.label.indexOf('音量') >= 0) {
         const v = r.label === '主音量' ? S.master : r.label === '音效音量' ? S.sfx : S.music;
-        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(vx - 60, y + 28, 120, 3);
-        ctx.fillStyle = '#ffb05a'; ctx.fillRect(vx - 60, y + 28, 120 * v, 3);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(vx - 60, y + 26, 120, 3);
+        ctx.fillStyle = '#ffb05a'; ctx.fillRect(vx - 60, y + 26, 120 * v, 3);
       }
       const d = it.lr || (it.click ? (G.nav.active ? 1 : I.mx < vx ? -1 : 1) : 0);
       if (d) { r.step(d); store(); }
     });
-    const by = 500;
+    const by = 504;
     if (G.button(ctx, G.W / 2 - 230, by, 200, 44, '恢复默认')) {
-      const keep = { inputMode: S.inputMode, fullscreen: S.fullscreen };
+      const keep = { lang: S.lang, inputMode: S.inputMode, fullscreen: S.fullscreen };
       Object.assign(S, DEF, keep); G.applySettings(); G.fit(); store();
     }
     if (G.button(ctx, G.W / 2 + 30, by, 200, 44, '返回', true)) G.closeSub();
-    G.text(ctx, G.pad.active ? '方向键 / 左摇杆 选择 · 左右 调整 · B 返回' : '点击左右两侧调整 · Esc 返回', G.W / 2, 560, 12, '#8a8088', 'center');
+    G.text(ctx, G.pad.active ? '方向键 / 左摇杆 选择 · 左右 调整 · B 返回' : '点击左右两侧调整 · Esc 返回', G.W / 2, 566, 12, '#8a8088', 'center');
   };
 
   G.openSub = function (state) { const g = G.game; g.back = g.state; g.state = state; g.stateT = 0; };

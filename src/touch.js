@@ -98,7 +98,7 @@
     ctx.fillStyle = 'rgba(12,9,14,0.6)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 3; ctx.stroke();
     ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, -Math.PI / 2, -Math.PI / 2 + TAU * frac); ctx.stroke();
-    G.text(ctx, label, b.x, b.y + 1, b.r * 0.62, frac >= 1 ? color : '#8a8490', 'center', true);
+    G.text(ctx, label, b.x, b.y + 1, b.r * 0.62, frac >= 1 ? color : '#8a8490', 'center', true, false, b.r * 1.6);
   }
 
   G.drawTouch = function (ctx) {
@@ -108,7 +108,7 @@
     else { ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(150, 400, 54, 0, TAU); ctx.stroke(); ctx.setLineDash([]); G.text(ctx, G.motion.status === 'ok' ? '倾斜移动' : '移动', 150, 400, 13, 'rgba(255,255,255,0.3)', 'center'); }
     if (T.aim) stick(ctx, T.aim, '#ffb05a');
     else { ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = 2; ctx.setLineDash([6, 8]); ctx.beginPath(); ctx.arc(G.W - 110, 400, 54, 0, TAU); ctx.stroke(); ctx.setLineDash([]); G.text(ctx, '射击', G.W - 110, 400, 13, 'rgba(255,255,255,0.3)', 'center'); }
-    button(ctx, BTN.dash, '闪', '#3ff0da', G.clamp(1 - p.dashCd / p.stats.dashCd, 0, 1));
+    button(ctx, BTN.dash, '#闪', '#3ff0da', G.clamp(1 - p.dashCd / p.stats.dashCd, 0, 1));
     if (p.near) button(ctx, BTN.use, 'E', '#ffb05a', 1);
     const b = BTN.pause;
     ctx.fillStyle = 'rgba(12,9,14,0.6)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
@@ -119,6 +119,6 @@
   G.drawRotateHint = function (ctx) {
     if (!T.on || window.innerHeight <= window.innerWidth) return;
     ctx.fillStyle = 'rgba(7,4,9,0.86)'; ctx.fillRect(0, 0, G.W, G.H);
-    G.text(ctx, '请将设备横过来游玩', G.W / 2, G.H / 2, 40, '#ffe9c8', 'center', true);
+    G.text(ctx, '请将设备横过来游玩', G.W / 2, G.H / 2, 40, '#ffe9c8', 'center', true, false, G.W - 60);
   };
 })();
