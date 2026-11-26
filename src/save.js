@@ -69,7 +69,7 @@
       if (!d.boss || !rooms.length) throw new Error('bad dungeon');
 
       g.player = p;
-      g.diff = G.DIFFS[data.diff] ? data.diff : 'hard';
+      g.diff = G.DIFFS[data.diff] ? data.diff : 'nightmare';
       g.floor = data.floor; g.dmgMul = (1 + 0.2 * (data.floor - 1)) * G.diff().dmg;
       g.runTime = data.runTime || 0; g.kills = data.kills || 0; g.goldTotal = data.goldTotal || 0; g.dmgTaken = data.dmgTaken || 0; g.dmgDealt = data.dmgDealt || 0;
       g.perksTaken = (data.perks || []).map(perkOf).filter(Boolean); g.perkChoices = [];

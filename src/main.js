@@ -3,12 +3,12 @@
 (function () {
   const G = window.G;
   G.MAX_FLOOR = 3;
-  // 难度：简单（默认）比原版轻松很多；困难 = 原版强度；噩梦、地狱逐级加压
+  // 难度：整体偏简单——简单很轻松，困难比原版略轻松，噩梦接近原版，地狱比原版更难
   G.DIFFS = {
-    easy: { name: '简单', desc: '敌人更脆、伤害更低，生命更多、金币更多', color: '#8fd879', hp: 0.65, boss: 0.7, dmg: 0.55, bspd: 0.85, budget: -2, gold: 1.3, php: 25, shield: 0.8 },
-    hard: { name: '困难', desc: '原版强度，需要熟练走位', color: '#e2732b', hp: 1, boss: 1, dmg: 1, bspd: 1, budget: 0, gold: 1, php: 0, shield: 1 },
-    nightmare: { name: '噩梦', desc: '敌人更多更硬，子弹更快', color: '#b874ff', hp: 1.4, boss: 1.35, dmg: 1.35, bspd: 1.1, budget: 2, gold: 1, php: 0, shield: 1.2 },
-    hell: { name: '地狱', desc: '极限挑战：生命更少，护盾恢复更慢', color: '#ff3b4a', hp: 1.85, boss: 1.7, dmg: 1.7, bspd: 1.2, budget: 4, gold: 0.9, php: -20, shield: 1.6 }
+    easy: { name: '简单', desc: '敌人更脆、伤害更低，生命更多、金币更多', color: '#8fd879', hp: 0.55, boss: 0.6, dmg: 0.45, bspd: 0.8, budget: -3, gold: 1.4, php: 30, shield: 0.7 },
+    hard: { name: '困难', desc: '有一定挑战，需要注意走位', color: '#e2732b', hp: 0.8, boss: 0.85, dmg: 0.75, bspd: 0.92, budget: -1, gold: 1.15, php: 10, shield: 0.9 },
+    nightmare: { name: '噩梦', desc: '接近原版强度，敌人更多更硬', color: '#b874ff', hp: 1.05, boss: 1.05, dmg: 1, bspd: 1, budget: 1, gold: 1, php: 0, shield: 1 },
+    hell: { name: '地狱', desc: '极限挑战：生命更少，护盾恢复更慢', color: '#ff3b4a', hp: 1.4, boss: 1.35, dmg: 1.3, bspd: 1.1, budget: 3, gold: 1, php: -10, shield: 1.3 }
   };
   G.DIFF_IDS = ['easy', 'hard', 'nightmare', 'hell'];
   G.diff = () => G.DIFFS[G.game.diff] || G.DIFFS.hard;

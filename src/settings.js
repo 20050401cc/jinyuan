@@ -3,7 +3,7 @@
 (function () {
   const G = window.G;
   const KEY = 'jinyuan.settings.v1';
-  G.VERSION = '1.4.0';
+  G.VERSION = '1.4.1';
   G.desktop = window.jinyuanDesktop || null; // 桌面版（Electron）注入的接口
 
   const DEF = {
